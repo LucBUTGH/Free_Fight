@@ -16,17 +16,18 @@ public class Affichage extends JFrame {
     private final List<Defense> defensesEnPortee = new ArrayList<>();
   
     private List<Troupe> troupes;
-
-
+    
+    private Troupe troupeSelectionnee = null;
+    private boolean enDeplacement = false;
+    private int destinationX;
+    private int destinationY;
 
     private Image barbareImg;
     private Image sorcierImg;
     private Image pekkaImg;
-  
 
     public Affichage(List<Troupe> troupes) {
 
-        // Défenses de test placées sur la map
         defenses.add(new Defense("Canon",        200, 150, 200, 200));
         defenses.add(new Defense("Tour Archer",  100, 220, 500, 280));
         defenses.add(new Defense("Mortier",      300, 180, 360, 430));
@@ -38,15 +39,25 @@ public class Affichage extends JFrame {
         
         barbareImg = new ImageIcon("res/barbare.png").getImage();
         sorcierImg = new ImageIcon("res/sorcier.png").getImage();
-        pekkaImg = new ImageIcon("res/pekka.png").getImage();
+        pekkaImg   = new ImageIcon("res/pekka.png").getImage();
 
         add(new MapPanel());
         setVisible(true);
         this.troupes = troupes;
-        setBackground(new Color(34,139,34)); // vert terrain
+        setBackground(new Color(34, 139, 34));
+        
+        Timer timer = new Timer(40, e -> {
+            if (enDeplacement && troupeSelectionnee != null) {
+                troupeSelectionnee.moveTo(destinationX, destinationY);
+                if (troupeSelectionnee.isArrived(destinationX, destinationY)) {
+                    enDeplacement = false;
+                }
+                repaint();
+            }
+        });
+        timer.start();
     }
 
-    // ---------------------------------------------------------------
     private class MapPanel extends JPanel {
 
         private static final int CELL = 50;
@@ -57,14 +68,29 @@ public class Affichage extends JFrame {
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    clickPoint = e.getPoint();
-                    defensesEnPortee.clear();
-                    for (Defense d : defenses) {
-                        if (d.estAPortee(e.getX(), e.getY())) {
-                            defensesEnPortee.add(d);
+                    int mx = e.getX();
+                    int my = e.getY();
+
+                    // 1. Sélection d'une troupe
+                    Troupe t = getTroupeAtPosition(mx, my);
+                    if (t != null) {
+                        troupeSelectionnee = t;
+                        repaint();
+                        return;
+                    }
+
+                    // 2. Si une troupe est sélectionnée, elle se dirige vers le bâtiment le plus proche
+                    if (troupeSelectionnee != null) {
+                        Batiment cible = getBatimentLePlusProche(
+                            troupeSelectionnee.getX(),
+                            troupeSelectionnee.getY()
+                        );
+                        if (cible != null) {
+                            destinationX = cible.getX();
+                            destinationY = cible.getY();
+                            enDeplacement = true;
                         }
                     }
-                    repaint();
                 }
             });
         }
@@ -79,12 +105,37 @@ public class Affichage extends JFrame {
             dessinerHotelDeVille(g2);
             dessinerDefenses(g2);
             dessinerResultat(g2);
-            // Dessine la bare en bas de l'écran
             g.setColor(new Color(50, 50, 50));
             g.fillRect(0, getHeight() - 100, getWidth(), 100);
-
-            // Dessine les troupes
+            dessinerTroupes(g);
             drawAvatars(g);
+        }
+
+        private Troupe getTroupeAtPosition(int mouseX, int mouseY) {
+            for (Troupe t : troupes) {
+                int tx = t.getX();
+                int ty = t.getY();
+                if (mouseX >= tx && mouseX <= tx + 40 &&
+                        mouseY >= ty && mouseY <= ty + 40) {
+                    return t;
+                }
+            }
+            return null;
+        }
+
+        private void dessinerTroupes(Graphics g) {
+            for (Troupe t : troupes) {
+                if (t instanceof Barbare) {
+                    g.drawImage(barbareImg, t.getX(), t.getY(), 40, 40, Affichage.this);
+                } else if (t instanceof Sorcier) {
+                    g.drawImage(sorcierImg, t.getX(), t.getY(), 40, 40, Affichage.this);
+                } else if (t instanceof Pekka) {
+                    g.drawImage(pekkaImg, t.getX(), t.getY(), 40, 40, Affichage.this);
+                }
+                if (t == troupeSelectionnee) {
+                    g.drawRect(t.getX(), t.getY(), 40, 40);
+                }
+            }
         }
 
         private void dessinerGrille(Graphics2D g2) {
@@ -97,7 +148,6 @@ public class Affichage extends JFrame {
             for (Defense d : defenses) {
                 boolean touchee = defensesEnPortee.contains(d);
 
-                // Zone de portée (cercle)
                 Color fillPortee   = touchee ? new Color(255, 50,  50,  55) : new Color(255, 200, 0, 40);
                 Color strokePortee = touchee ? new Color(255, 50,  50, 160) : new Color(255, 200, 0, 140);
                 int rx = d.getX() - d.getPortee();
@@ -112,7 +162,6 @@ public class Affichage extends JFrame {
                 g2.drawOval(rx, ry, rd, rd);
                 g2.setStroke(new BasicStroke(1));
 
-                // Bâtiment (carré)
                 int bx = d.getX() - DEF_SIZE / 2;
                 int by = d.getY() - DEF_SIZE / 2;
                 g2.setColor(touchee ? new Color(220, 50, 50) : new Color(160, 60, 60));
@@ -122,7 +171,6 @@ public class Affichage extends JFrame {
                 g2.drawRect(bx, by, DEF_SIZE, DEF_SIZE);
                 g2.setStroke(new BasicStroke(1));
 
-                // Étiquette nom
                 g2.setFont(new Font("SansSerif", Font.BOLD, 11));
                 FontMetrics fm = g2.getFontMetrics();
                 String label = d.getNom();
@@ -131,7 +179,6 @@ public class Affichage extends JFrame {
                 g2.setColor(Color.WHITE);
                 g2.drawString(label, d.getX() - fm.stringWidth(label) / 2, d.getY() + DEF_SIZE / 2 + 14);
 
-                // Info PV / portée
                 g2.setFont(new Font("SansSerif", Font.PLAIN, 9));
                 fm = g2.getFontMetrics();
                 String info = "PV:" + d.getPv() + "  P:" + d.getPortee();
@@ -147,7 +194,6 @@ public class Affichage extends JFrame {
             int bx = x - SIZE / 2;
             int by = y - SIZE / 2;
 
-            // Corps du bâtiment (doré)
             g2.setColor(new Color(218, 165, 32));
             g2.fillRect(bx, by, SIZE, SIZE);
             g2.setColor(new Color(255, 215, 0));
@@ -155,7 +201,6 @@ public class Affichage extends JFrame {
             g2.drawRect(bx, by, SIZE, SIZE);
             g2.setStroke(new BasicStroke(1));
 
-            // Toit triangulaire
             int[] xs = { bx, bx + SIZE / 2, bx + SIZE };
             int[] ys = { by, by - 18, by };
             g2.setColor(new Color(160, 82, 45));
@@ -165,14 +210,12 @@ public class Affichage extends JFrame {
             g2.drawPolygon(xs, ys, 3);
             g2.setStroke(new BasicStroke(1));
 
-            // Étoile centrale (croix simple)
             g2.setColor(new Color(255, 255, 200));
             g2.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2.drawLine(x - 10, y, x + 10, y);
             g2.drawLine(x, y - 10, x, y + 10);
             g2.setStroke(new BasicStroke(1));
 
-            // Étiquette nom
             g2.setFont(new Font("SansSerif", Font.BOLD, 12));
             FontMetrics fm = g2.getFontMetrics();
             String label = hotelDeVille.getNom();
@@ -181,7 +224,6 @@ public class Affichage extends JFrame {
             g2.setColor(new Color(255, 240, 150));
             g2.drawString(label, x - fm.stringWidth(label) / 2, y + SIZE / 2 + 16);
 
-            // Info PV
             g2.setFont(new Font("SansSerif", Font.PLAIN, 9));
             fm = g2.getFontMetrics();
             String info = "PV:" + hotelDeVille.getPv();
@@ -197,7 +239,6 @@ public class Affichage extends JFrame {
                 return;
             }
 
-            // Point de clic
             g2.setColor(Color.CYAN);
             g2.fillOval(clickPoint.x - 6, clickPoint.y - 6, 12, 12);
             g2.setColor(Color.WHITE);
@@ -205,7 +246,6 @@ public class Affichage extends JFrame {
             g2.drawOval(clickPoint.x - 6, clickPoint.y - 6, 12, 12);
             g2.setStroke(new BasicStroke(1));
 
-            // Bandeau résultat
             String msg;
             if (defensesEnPortee.isEmpty()) {
                 msg = "Hors de portée de toutes les défenses";
@@ -228,24 +268,38 @@ public class Affichage extends JFrame {
         }
     }
 
-    private void drawAvatars(Graphics g) {
+    private Batiment getBatimentLePlusProche(int x, int y) {
+        List<Batiment> batiments = new ArrayList<>();
+        batiments.add(hotelDeVille);
+        batiments.addAll(defenses);
 
-        int avatarSize = 50;         
+        Batiment lePlusProche = null;
+        double distMin = Double.MAX_VALUE;
+
+        for (Batiment b : batiments) {
+            double dist = Math.sqrt(Math.pow(b.getX() - x, 2) + Math.pow(b.getY() - y, 2));
+            if (dist < distMin) {
+                distMin = dist;
+                lePlusProche = b;
+            }
+        }
+        return lePlusProche;
+    }
+
+    private void drawAvatars(Graphics g) {
+        int avatarSize = 50;
         int spacing = 120;
         int totalWidth = spacing * 2;
         int startX = (getWidth() - totalWidth) / 2;
-        int y = getHeight() - 80;     // Affichage en bas de l'écran
+        int y = getHeight() - 80;
         g.setColor(Color.WHITE);
 
-        // Barbare
         g.drawImage(barbareImg, startX, y, avatarSize, avatarSize, this);
         g.drawString("Barbare", startX, y - 5);
 
-        // Sorcier
         g.drawImage(sorcierImg, startX + spacing, y, avatarSize, avatarSize, this);
         g.drawString("Sorcier", startX + spacing, y - 5);
 
-        // Pekka
         g.drawImage(pekkaImg, startX + spacing * 2, y, avatarSize, avatarSize, this);
         g.drawString("Pekka", startX + spacing * 2, y - 5);
     }

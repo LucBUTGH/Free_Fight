@@ -12,12 +12,11 @@ public class Test {
         List<Troupe> troupes = new ArrayList<>();
 
         // Ajout de différentes troupes
-        troupes.add(new Barbare(100, 100));
-        troupes.add(new Sorcier(250, 150));
-        troupes.add(new Pekka(400, 200));
+        troupes.add(new Barbare(50, 500));
+        troupes.add(new Sorcier(120, 500));
+        troupes.add(new Pekka(190, 500));
 
         // Création de la fenêtre d'affichage
         new Affichage(troupes);
-
     }
 }

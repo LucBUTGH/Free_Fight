@@ -30,6 +30,40 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
         return health > 0; // la troupe est vivante si elle a plus de 0 points de vie
     }
         */
+    
+    public void moveTo(int targetX, int targetY) {
+
+        /*
+         * Cette méthode compare la position actuelle de la troupe
+         * avec la position cible.
+         *
+         * - Si la troupe est avant la destination sur l’axe X,
+         *   elle avance.
+         * - Si elle est après la destination, elle recule.
+         *
+         * On applique la même logique pour l’axe Y.
+         */
+
+        if (x < targetX) {
+            x += speed;
+            if (x > targetX) x = targetX;
+        } else if (x > targetX) {
+            x -= speed;
+            if (x < targetX) x = targetX;
+        }
+
+        if (y < targetY) {
+            y += speed;
+            if (y > targetY) y = targetY;
+        } else if (y > targetY) {
+            y -= speed;
+            if (y < targetY) y = targetY;
+        }
+    }
+
+    public boolean isArrived(int targetX, int targetY) {
+        return x == targetX && y == targetY;
+    }
 
     // Getters
     public int getX() {
