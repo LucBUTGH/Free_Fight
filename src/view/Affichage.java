@@ -22,7 +22,7 @@ public class Affichage extends JFrame {
     private int destinationY;
 
 	// Nombre de secondes restantes pour le combat
-    private int secondesRestantes = 120;
+    private int secondesRestantes = 20;
 
 	// Timer Swing utilisé pour faire fonctionner le chronomètre.
 	// Il exécute une action automatiquement toutes les X millisecondes.
