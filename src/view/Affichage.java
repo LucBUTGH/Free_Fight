@@ -15,7 +15,15 @@ public class Affichage extends JFrame {
     private final List<Defense> defensesEnPortee = new ArrayList<>();
 
     private List<Troupe> troupes;
+
     private Troupe troupeSelectionnee = null;
+
+	// Nombre de secondes restantes pour le combat
+    private int secondesRestantes = 120;
+
+	// Timer Swing utilisé pour faire fonctionner le chronomètre.
+	// Il exécute une action automatiquement toutes les X millisecondes.
+	private Timer chrono;
 
     private Image barbareImg;
     private Image sorcierImg;
@@ -23,9 +31,9 @@ public class Affichage extends JFrame {
 
     public Affichage(List<Troupe> troupes) {
 
-        defenses.add(new Defense("Canon", 200, 150, 200, 200));
+        defenses.add(new Defense("Canon",       200, 150, 200, 200));
         defenses.add(new Defense("Tour Archer", 100, 220, 500, 280));
-        defenses.add(new Defense("Mortier", 300, 180, 360, 430));
+        defenses.add(new Defense("Mortier",     300, 180, 360, 430));
 
         setTitle("FreeFight – Test Portée Défenses");
         setSize(1280, 720);
@@ -36,11 +44,49 @@ public class Affichage extends JFrame {
         sorcierImg = new ImageIcon("res/sorcier.png").getImage();
         pekkaImg = new ImageIcon("res/pekka.png").getImage();
 
-        add(new MapPanel());
+        MapPanel mapPanel = new MapPanel();
+        mapPanel.setLayout(null);
+
+        // Bouton Déployer en haut à gauche
+        JButton btnDeployer = new JButton("⚔ Déployer");
+        btnDeployer.setFocusPainted(false);
+        btnDeployer.setBackground(new Color(180, 30, 30));
+        btnDeployer.setForeground(Color.WHITE);
+        btnDeployer.setFont(new Font("SansSerif", Font.BOLD, 14));
+        btnDeployer.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        btnDeployer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnDeployer.addActionListener(e -> demarrerChrono());
+        btnDeployer.setBounds(10, 8, 130, 32);
+        mapPanel.add(btnDeployer);
+
+        add(mapPanel);
         setVisible(true);
         this.troupes = troupes;
         setBackground(new Color(34, 139, 34));
 
+	    // Création du chronomètre
+        chrono = new Timer(1000, e -> {
+
+            // Tant qu'il reste du temps, on décrémente le chrono
+            if (secondesRestantes > 0) {
+                secondesRestantes--;  // enlève 1 seconde
+
+                // repaint() force le redessin de la fenêtre
+                // Cela permet d'actualiser l'affichage du chrono à l'écran
+                repaint();
+
+            } else {
+
+                // Lorsque le temps atteint 0, on arrête le Timer
+                // sinon il continuerait à tourner inutilement
+                chrono.stop();
+
+                // On redessine une dernière fois l'écran pour afficher "Temps écoulé"
+                repaint();
+            }
+        });
+
+        // Timer déplacement troupes
         Timer timer = new Timer(40, e -> {
             for (Troupe t : troupes) {
                 t.agir(defenses, hotelDeVille, new ArrayList<Batiment>());
@@ -50,6 +96,7 @@ public class Affichage extends JFrame {
         timer.start();
     }
 
+    // ---------------------------------------------------------------
     private class MapPanel extends JPanel {
 
         private static final int CELL = 50;
@@ -69,6 +116,14 @@ public class Affichage extends JFrame {
                         troupeSelectionnee = t;
                     }
 
+                    // Test portée défenses
+                    clickPoint = e.getPoint();
+                    defensesEnPortee.clear();
+                    for (Defense d : defenses) {
+                        if (d.estAPortee(e.getX(), e.getY())) {
+                            defensesEnPortee.add(d);
+                        }
+                    }
                     repaint();
                 }
             });
@@ -84,12 +139,41 @@ public class Affichage extends JFrame {
             dessinerHotelDeVille(g2);
             dessinerDefenses(g2);
             dessinerResultat(g2);
+            dessinerChrono(g2);
 
             g.setColor(new Color(50, 50, 50));
             g.fillRect(0, getHeight() - 100, getWidth(), 100);
 
             dessinerTroupes(g);
             drawAvatars(g);
+        }
+
+        private Troupe getTroupeAtPosition(int mouseX, int mouseY) {
+            for (Troupe t : troupes) {
+                int tx = t.getX();
+                int ty = t.getY();
+                if (mouseX >= tx && mouseX <= tx + 40 &&
+                        mouseY >= ty && mouseY <= ty + 40) {
+                    return t;
+                }
+            }
+            return null;
+        }
+
+        private void dessinerTroupes(Graphics g) {
+            for (Troupe t : troupes) {
+                if (t instanceof Barbare) {
+                    g.drawImage(barbareImg, t.getX(), t.getY(), 40, 40, Affichage.this);
+                } else if (t instanceof Sorcier) {
+                    g.drawImage(sorcierImg, t.getX(), t.getY(), 40, 40, Affichage.this);
+                } else if (t instanceof Pekka) {
+                    g.drawImage(pekkaImg, t.getX(), t.getY(), 40, 40, Affichage.this);
+                }
+                if (t == troupeSelectionnee) {
+                    g.setColor(Color.YELLOW);
+                    g.drawRect(t.getX(), t.getY(), 40, 40);
+                }
+            }
         }
 
         private void dessinerGrille(Graphics2D g2) {
@@ -189,13 +273,51 @@ public class Affichage extends JFrame {
             g2.drawString(info, x - fm.stringWidth(info) / 2, y + SIZE / 2 + 27);
         }
 
-        public void dessinerResultat(Graphics2D g2) {
-            if (clickPoint == null) {
-                g2.setColor(Color.WHITE);
-                g2.setFont(new Font("SansSerif", Font.BOLD, 13));
-                g2.drawString("Cliquez sur la carte pour tester la portée des défenses", 10, 25);
-                return;
+        public void dessinerChrono(Graphics2D g2) {
+
+            // Conversion des secondes restantes en minutes + secondes
+            // Exemple : 125 secondes → 2 minutes 05 secondes
+            int minutes = secondesRestantes / 60;
+            int secondes = secondesRestantes % 60;
+
+            // Formatage de l'affichage (ex : 2:05)
+            String temps = String.format("%d:%02d", minutes, secondes);
+
+            // Etat du chrono
+            boolean urgent = secondesRestantes <= 30; // passe en mode urgence sous 30s
+            boolean fini   = secondesRestantes == 0;   // chrono terminé
+
+            g2.setFont(new Font("SansSerif", Font.BOLD, 22));
+            FontMetrics fm = g2.getFontMetrics();
+            int w = fm.stringWidth(temps) + 28;
+            int x = getWidth() / 2 - w / 2;
+
+            // Choix de la couleur du fond selon l'état du chrono
+            Color fond = fini   ? new Color(180, 0, 0, 210) :   // rouge si terminé
+                         urgent ? new Color(180, 80, 0, 200) :  // orange si moins de 30s
+                                  new Color(0, 0, 0, 180);      // noir normal
+            g2.setColor(fond);
+            g2.fillRoundRect(x, 8, w, 32, 10, 10);
+
+            g2.setColor(fini   ? new Color(255, 100, 100) :
+                        urgent ? new Color(255, 200, 80)  :
+                                 Color.WHITE);
+            g2.drawString(temps, x + 14, 30);
+
+            // Si le chrono est terminé on affiche un message
+            if (fini) {
+                g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+                String msg = "Temps écoulé !";
+
+                g2.setColor(new Color(255, 80, 80));
+                g2.drawString(msg,
+                    getWidth() / 2 - g2.getFontMetrics().stringWidth(msg) / 2,
+                    55);
             }
+        }
+
+        public void dessinerResultat(Graphics2D g2) {
+            if (clickPoint == null) return;
 
             g2.setColor(Color.CYAN);
             g2.fillOval(clickPoint.x - 6, clickPoint.y - 6, 12, 12);
@@ -220,37 +342,20 @@ public class Affichage extends JFrame {
             FontMetrics fm = g2.getFontMetrics();
             int w = fm.stringWidth(msg) + 24;
             g2.setColor(new Color(0, 0, 0, 190));
-            g2.fillRoundRect(8, 8, w, 28, 10, 10);
+            g2.fillRoundRect(8, 48, w, 28, 10, 10);
             g2.setColor(defensesEnPortee.isEmpty() ? new Color(100, 230, 100) : new Color(255, 100, 100));
-            g2.drawString(msg, 20, 27);
+            g2.drawString(msg, 20, 67);
         }
+    }
 
-        private Troupe getTroupeAtPosition(int mouseX, int mouseY) {
-            for (Troupe t : troupes) {
-                int tx = t.getX();
-                int ty = t.getY();
+    public void demarrerChrono() {
 
-                if (mouseX >= tx && mouseX <= tx + 40 &&
-                        mouseY >= ty && mouseY <= ty + 40) {
-                    return t;
-                }
-            }
-            return null;
-        }
+        // Vérifie si le chrono est déjà lancé
+        // Cela évite de démarrer plusieurs timers en même temps
+        if (!chrono.isRunning()) {
 
-        private void dessinerTroupes(Graphics g) {
-            for (Troupe t : troupes) {
-                if (t instanceof Barbare) {
-                    g.drawImage(barbareImg, t.getX(), t.getY(), 40, 40, Affichage.this);
-                } else if (t instanceof Sorcier) {
-                    g.drawImage(sorcierImg, t.getX(), t.getY(), 40, 40, Affichage.this);
-                } else if (t instanceof Pekka) {
-                    g.drawImage(pekkaImg, t.getX(), t.getY(), 40, 40, Affichage.this);
-                }
-                if (t == troupeSelectionnee) {
-                    g.drawRect(t.getX(), t.getY(), 40, 40);
-                }
-            }
+            // Démarre le Timer → il va exécuter l'action toutes les secondes
+            chrono.start();
         }
     }
 
