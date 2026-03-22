@@ -56,6 +56,9 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
     public int getHealth() {
         return health;
     }
+    
+    
+    //Méthode pour trouver le Batiment le plus proche des troupes 
 
     public Batiment trouverPlusProche(List<? extends Batiment> liste) {
         Batiment plusProche = null;
@@ -74,6 +77,9 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
 
         return plusProche;
     }
+    
+    
+    // methode qui choisi le batiment cible
 
     public Batiment choisirCible(List<? extends Batiment> defenses,
                                  Batiment chateauDeClan,
