@@ -3,13 +3,15 @@ package view;
 import java.awt.*;
 import javax.swing.*;
 
+import test.Test;
+
 public class StartPanel extends JPanel {
     private final JButton startButton;
     private final JLabel titleLabel;
     
     private static final long serialVersionUID = 1L;
 
-    public StartPanel(Runnable onStart) {
+    public StartPanel(Test t) {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
@@ -32,6 +34,6 @@ public class StartPanel extends JPanel {
         bottom.add(startButton);
         add(bottom, BorderLayout.SOUTH);
 
-        startButton.addActionListener(e -> onStart.run());
+        startButton.addActionListener(e -> t.lancerJeu());
     }
 }

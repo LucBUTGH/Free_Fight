@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import model.*;
 
-public class Affichage extends JFrame {
+public class Affichage extends JPanel {
 
     private final List<Defense> defenses = new ArrayList<>();
     private final Batiment hotelDeVille = new Batiment("Hôtel de Ville", 1500, 375, 290);
@@ -33,21 +33,20 @@ public class Affichage extends JFrame {
 
     public Affichage(List<Troupe> troupes) {
 
+    	setLayout(new BorderLayout());
+    	
         defenses.add(new Defense("Canon",       200, 150, 200, 200));
         defenses.add(new Defense("Tour Archer", 100, 220, 500, 280));
         defenses.add(new Defense("Mortier",     300, 180, 360, 430));
 
-        setTitle("FreeFight – Test Portée Défenses");
-        setSize(1280, 720);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        this.setPreferredSize(new Dimension(1280, 720));
 
         barbareImg = new ImageIcon("res/barbare.png").getImage();
         sorcierImg = new ImageIcon("res/sorcier.png").getImage();
         pekkaImg = new ImageIcon("res/pekka.png").getImage();
 
         MapPanel mapPanel = new MapPanel();
-        mapPanel.setLayout(null);
+        //mapPanel.setLayout(null);
 
         // Bouton Déployer en haut à gauche
         JButton btnDeployer = new JButton("⚔ Déployer");
@@ -61,10 +60,9 @@ public class Affichage extends JFrame {
         btnDeployer.setBounds(10, 8, 130, 32);
         mapPanel.add(btnDeployer);
 
-        add(mapPanel);
-        setVisible(true);
+        add(mapPanel,BorderLayout.CENTER);
+        
         this.troupes = troupes;
-        setBackground(new Color(34, 139, 34));
 
 	    // Création du chronomètre
         chrono = new Timer(1000, e -> {
@@ -106,7 +104,7 @@ public class Affichage extends JFrame {
         
         private static final long serialVersionUID = 1L;
 
-        MapPanel() {
+        public MapPanel() {
             setBackground(new Color(34, 139, 34));
 
             addMouseListener(new MouseAdapter() {
@@ -134,8 +132,8 @@ public class Affichage extends JFrame {
         }
 
         @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
+        public void paint(Graphics g) {
+            super.paint(g);
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
