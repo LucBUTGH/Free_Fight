@@ -49,16 +49,16 @@ public class Affichage extends JPanel {
         //mapPanel.setLayout(null);
 
         // Bouton Déployer en haut à gauche
-        JButton btnDeployer = new JButton("⚔ Déployer");
-        btnDeployer.setFocusPainted(false);
-        btnDeployer.setBackground(new Color(180, 30, 30));
-        btnDeployer.setForeground(Color.WHITE);
-        btnDeployer.setFont(new Font("SansSerif", Font.BOLD, 14));
-        btnDeployer.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
-        btnDeployer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnDeployer.addActionListener(e -> demarrerChrono());
-        btnDeployer.setBounds(10, 8, 130, 32);
-        mapPanel.add(btnDeployer);
+//        JButton btnDeployer = new JButton("⚔ Déployer");
+//        btnDeployer.setFocusPainted(false);
+//        btnDeployer.setBackground(new Color(180, 30, 30));
+//        btnDeployer.setForeground(Color.WHITE);
+//        btnDeployer.setFont(new Font("SansSerif", Font.BOLD, 14));
+//        btnDeployer.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+//        btnDeployer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//        btnDeployer.addActionListener(e -> demarrerChrono());
+//        btnDeployer.setBounds(10, 8, 130, 32);
+//        mapPanel.add(btnDeployer);
 
         add(mapPanel,BorderLayout.CENTER);
         
