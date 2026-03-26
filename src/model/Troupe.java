@@ -10,6 +10,7 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
     protected int health;   // points de vie de la troupe
     protected int damage;   // dégâts que la troupe inflige
     protected int speed;    // vitesse de déplacement de la troupe
+    protected Batiment cible; // batiment cibler
 
     public Troupe(int x, int y, int health, int damage, int speed) {
         this.x = x;
@@ -96,13 +97,21 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
 
         return cible;
     }
+    
+ // Définit la cible de la troupe
+    public void setCible(Batiment cible) {
+        this.cible = cible;
+    }
 
-    public void agir(List<? extends Batiment> defenses,
-                     Batiment chateauDeClan,
-                     List<? extends Batiment> autresBatiments) {
-        Batiment cible = choisirCible(defenses, chateauDeClan, autresBatiments);
-
-        if (cible == null) return;
+    // Retourne la cible actuelle
+    public Batiment getCible() {
+        return cible;
+    }
+ // La troupe agit seulement si une cible a été choisie
+    public void agirManuellement() {
+        if (cible == null || cible.estDetruit()) {
+            return;
+        }
 
         if (!isArrived(cible.getX(), cible.getY())) {
             moveTo(cible.getX(), cible.getY());
