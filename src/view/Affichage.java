@@ -120,7 +120,11 @@ public class Affichage extends JPanel {
             	        repaint();
             	        return;
             	    }
-
+                    
+            	    // Clique sur le sol pour déplacer le pekka 
+            	    if (troupeSelectionnee instanceof Pekka) {
+    					((Pekka) troupeSelectionnee).setDestination(mx, my);
+					}
             	    // 3. Clique sur un bâtiment → donner une cible
             	    if (troupeSelectionnee != null) {
             	        Batiment b = getBatimentAtPosition(mx, my);
