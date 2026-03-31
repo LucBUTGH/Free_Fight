@@ -11,6 +11,10 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
     protected int damage;   // dégâts que la troupe inflige
     protected int speed;    // vitesse de déplacement de la troupe
     protected Batiment cible; // batiment cibler
+    protected Troupe cibleTroupe; // Troupe ciblée 
+    
+    // Attribut Camp pour chaque troupe
+    private Camp camp;
 
     public Troupe(int x, int y, int health, int damage, int speed) {
         this.x = x;
@@ -48,17 +52,42 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
     }
 
     // Getters
+    
+    // Récupérer la position x
     public int getX() {
         return x;
     }
+    
+    // Récupérer la position y
     public int getY() {
         return y;
     }
+    
+    // Récupérer les points de vie
     public int getHealth() {
         return health;
     }
     
+    // Récupérer le camp
+    public Camp getCamp() {
+        return camp;
+    }
     
+    // Getter pour la cible troupe 
+    public Troupe getCibleTroupe() {
+    	return cibleTroupe; 
+    }
+    
+    // Setter pour la troupe ciblée 
+    public void setCibleTroupe (Troupe t) {
+    	this.cibleTroupe = t;
+    }
+    // Setter pour le camp
+    public void setCamp(Camp camp) {
+        this.camp = camp;
+    }
+
+
     //Méthode pour trouver le Batiment le plus proche des troupes 
 
     public Batiment trouverPlusProche(List<? extends Batiment> liste) {
@@ -107,16 +136,49 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
     public Batiment getCible() {
         return cible;
     }
+    
+    // Faire baisser les points de vie d'une troupe 
+    public void prendreDegatsTroupe(int degats) {
+    	this.health -= degats;
+    }
+    
+    // Méthode pour savoir si une troupe est en vie ou pas
+    public boolean estMorte() {
+    	return health <= 0;
+    }
+    
+    
  // La troupe agit seulement si une cible a été choisie
     public void agirManuellement() {
-        if (cible == null || cible.estDetruit()) {
+
+        // 1. Combat contre une troupe
+    	// Si une troupe ennemie existe et en vie
+        if (cibleTroupe != null && !cibleTroupe.estMorte()) {
+        	// Bouger vers la cible ennemie
+            if (!isArrived(cibleTroupe.getX(), cibleTroupe.getY())) {
+                moveTo(cibleTroupe.getX(), cibleTroupe.getY());
+            } else {
+                cibleTroupe.prendreDegatsTroupe(damage);
+            }
             return;
         }
 
+        // 2. Combat contre bâtiment (existant)
+        
+        // Si pas de cible ou cible détruite, on fait rien
+        if (cible == null || cible.estDetruit()) {
+            return;
+        }
+        // Si nous sommes pas arrivés, on bouge vers la cible
         if (!isArrived(cible.getX(), cible.getY())) {
             moveTo(cible.getX(), cible.getY());
-        } else {
+        } 
+        // Sinon on l'attaque 
+        else {
             cible.prendreDegats(damage);
         }
     }
+    
+    
+    
 }

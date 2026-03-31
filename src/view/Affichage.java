@@ -91,7 +91,7 @@ public class Affichage extends JPanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             dessinerGrille(g2);
-            dessinerHotelDeVille(g2);
+            dessinerChateau(g2);
             dessinerDefenses(g2);
             dessinerResultatPortee(g2);
             dessinerChrono(g2);
@@ -114,12 +114,97 @@ public class Affichage extends JPanel {
 
         // ── Hôtel de ville ───────────────────────────────────────────────────
 
+<<<<<<< HEAD
         private void dessinerHotelDeVille(Graphics2D g2) {
             if (partie.getHotelDeVille().estDetruit()) return;
 
             final int SIZE = 50;
             int x  = partie.getHotelDeVille().getX();
             int y  = partie.getHotelDeVille().getY();
+=======
+                boolean touchee = defensesEnPortee.contains(d);
+
+                // Zone de portée
+                Color fillPortee = touchee ? new Color(255, 50, 50, 55) : new Color(255, 200, 0, 40);
+                Color strokePortee = touchee ? new Color(255, 50, 50, 160) : new Color(255, 200, 0, 140);
+                int rx = d.getX() - d.getPortee();
+                int ry = d.getY() - d.getPortee();
+                int rd = d.getPortee() * 2;
+
+                g2.setColor(fillPortee);
+                g2.fillOval(rx, ry, rd, rd);
+                g2.setColor(strokePortee);
+                g2.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                        0, new float[]{6, 4}, 0));
+                g2.drawOval(rx, ry, rd, rd);
+                g2.setStroke(new BasicStroke(1));
+
+                // Bâtiment
+                int bx = d.getX() - DEF_SIZE / 2;
+                int by = d.getY() - DEF_SIZE / 2;
+                g2.setColor(touchee ? new Color(220, 50, 50) : new Color(160, 60, 60));
+                g2.fillRect(bx, by, DEF_SIZE, DEF_SIZE);
+                g2.setColor(Color.WHITE);
+                g2.setStroke(new BasicStroke(2));
+                g2.drawRect(bx, by, DEF_SIZE, DEF_SIZE);
+                g2.setStroke(new BasicStroke(1));
+
+                // Nom
+                g2.setFont(new Font("SansSerif", Font.BOLD, 11));
+                FontMetrics fm = g2.getFontMetrics();
+                String label = d.getNom();
+                g2.setColor(Color.BLACK);
+                g2.drawString(label, d.getX() - fm.stringWidth(label) / 2 + 1, d.getY() + DEF_SIZE / 2 + 15);
+                g2.setColor(Color.WHITE);
+                g2.drawString(label, d.getX() - fm.stringWidth(label) / 2, d.getY() + DEF_SIZE / 2 + 14);
+
+                // Info PV / portée
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 9));
+                fm = g2.getFontMetrics();
+                String info = "PV:" + d.getPv() + "  P:" + d.getPortee();
+                g2.setColor(new Color(220, 220, 220));
+                g2.drawString(info, d.getX() - fm.stringWidth(info) / 2, d.getY() + DEF_SIZE / 2 + 25);
+            }
+        }
+        
+     // Retourne le bâtiment situé sous le clic de la souris
+        private Batiment getBatimentAtPosition(int mouseX, int mouseY) {
+
+            final int DEF_SIZE = 30;
+            final int HOTEL_SIZE = 50;
+
+            // Vérifie d’abord les défenses
+            for (Defense d : partie.getDefenses()) {
+                int bx = d.getX() - DEF_SIZE / 2;
+                int by = d.getY() - DEF_SIZE / 2;
+
+                if (mouseX >= bx && mouseX <= bx + DEF_SIZE &&
+                        mouseY >= by && mouseY <= by + DEF_SIZE) {
+                    return d;
+                }
+            }
+
+            // Vérifie ensuite l’hôtel de ville
+            Chateau cht = partie.getChateau();
+            int bx = cht.getX() - HOTEL_SIZE / 2;
+            int by = cht.getY() - HOTEL_SIZE / 2;
+
+            if (mouseX >= bx && mouseX <= bx + HOTEL_SIZE &&
+                    mouseY >= by && mouseY <= by + HOTEL_SIZE) {
+                return cht;
+            }
+
+            return null;
+        }
+
+        // Dessine l’hôtel de ville s’il n’est pas détruit
+        private void dessinerChateau(Graphics2D g2) {
+            if (partie.getChateau().estDetruit()) return;
+
+            final int SIZE = 50;
+            int x = partie.getChateau().getX();
+            int y = partie.getChateau().getY();
+>>>>>>> cefcc1d349b218db9f653dfce0d2160a65c6eb0a
             int bx = x - SIZE / 2;
             int by = y - SIZE / 2;
 
@@ -147,7 +232,7 @@ public class Affichage extends JPanel {
 
             g2.setFont(new Font("SansSerif", Font.BOLD, 12));
             FontMetrics fm = g2.getFontMetrics();
-            String label = partie.getHotelDeVille().getNom();
+            String label = partie.getChateau().getNom();
             g2.setColor(Color.BLACK);
             g2.drawString(label, x - fm.stringWidth(label) / 2 + 1, y + SIZE / 2 + 17);
             g2.setColor(new Color(255, 240, 150));
@@ -155,7 +240,7 @@ public class Affichage extends JPanel {
 
             g2.setFont(new Font("SansSerif", Font.PLAIN, 9));
             fm = g2.getFontMetrics();
-            String info = "PV:" + partie.getHotelDeVille().getPv();
+            String info = "PV:" + partie.getChateau().getPv();
             g2.setColor(new Color(220, 220, 220));
             g2.drawString(info, x - fm.stringWidth(info) / 2, y + SIZE / 2 + 27);
         }
