@@ -6,6 +6,7 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 import model.*;
+import controller.GameController;
 
 public class Affichage extends JPanel {
 
@@ -18,12 +19,11 @@ public class Affichage extends JPanel {
     // Liste des défenses qui sont en portée du point cliqué
     private final List<Defense> defensesEnPortee = new ArrayList<>();
 
-    // Troupe actuellement sélectionnée à la souris
-    private Troupe troupeSelectionnee = null;
+    // Contrôleur du jeu
+    private GameController controller;
 
-    // Timer Swing utilisé pour faire fonctionner le chronomètre.
-    // Il exécute une action automatiquement toutes les X millisecondes.
-    private Timer chrono;
+    // Panneau principal de la carte
+    private MapPanel mapPanel;
 
     // Images des troupes
     private Image barbareImg;
@@ -32,14 +32,15 @@ public class Affichage extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    public Affichage(Partie partie) {
-
+    public Affichage(Partie partie, GameController controller) {
+    	
         setLayout(new BorderLayout());
 
         this.setPreferredSize(new Dimension(1280, 720));
 
         // On initialise d’abord la partie
         this.partie = partie;
+        this.controller = controller;
 
         // Chargement des images
         barbareImg = new ImageIcon("res/barbare.png").getImage();
@@ -47,46 +48,13 @@ public class Affichage extends JPanel {
         pekkaImg = new ImageIcon("res/pekka.png").getImage();
 
         // Création du panneau principal de la carte
-        MapPanel mapPanel = new MapPanel();
+         mapPanel = new MapPanel();
         // mapPanel.setLayout(null);
-
-        // Bouton Déployer en haut à gauche
-//        JButton btnDeployer = new JButton("⚔ Déployer");
-//        btnDeployer.setFocusPainted(false);
-//        btnDeployer.setBackground(new Color(180, 30, 30));
-//        btnDeployer.setForeground(Color.WHITE);
-//        btnDeployer.setFont(new Font("SansSerif", Font.BOLD, 14));
-//        btnDeployer.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
-//        btnDeployer.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-//        btnDeployer.addActionListener(e -> demarrerChrono());
-//        btnDeployer.setBounds(10, 8, 130, 32);
-//        mapPanel.add(btnDeployer);
 
 
         add(mapPanel, BorderLayout.CENTER);
 
-        // Création du chronomètre
-        chrono = new Timer(1000, e -> {
-            if (!partie.tempsEcoule()) {
-                partie.decrementerTemps();
-                repaint();
-            } else {
-                chrono.stop();
-                repaint();
-            }
-        });
-
-        // Ce timer est pour :
-        // faire bouger les troupes
-        // faire attaquer
-        // mettre à jour l’état du jeu
-        // redessiner l’écran
-        Timer timer = new Timer(40, e -> {
-            partie.update();
-            repaint();
-        });
-        timer.start();
-    }
+}
 
     // ---------------------------------------------------------------
     private class MapPanel extends JPanel {
@@ -97,77 +65,9 @@ public class Affichage extends JPanel {
         private static final long serialVersionUID = 1L;
 
         public MapPanel() {
-            setBackground(new Color(34, 139, 34));
-
-            addMouseListener(new MouseAdapter() {
-            	@Override
-            	public void mouseClicked(MouseEvent e) {
-            	    int mx = e.getX();
-            	    int my = e.getY();
-
-            	    // 1. Clique sur une troupe dans la barre du bas
-            	    Troupe tBar = getTroupeFromBar(mx, my);
-            	    if (tBar != null) {
-            	        troupeSelectionnee = tBar;
-            	        repaint();
-            	        return;
-            	    }
-
-            	    // 2. Clique sur une troupe sur la map
-            	    Troupe t = getTroupeAtPosition(mx, my);
-            	    if (t != null) {
-            	        troupeSelectionnee = t;
-            	        repaint();
-            	        return;
-            	    }
-                    
-            	    // Clique sur le sol pour déplacer le pekka 
-            	    if (troupeSelectionnee instanceof Pekka) {
-    					((Pekka) troupeSelectionnee).setDestination(mx, my);
-					}
-            	    // 3. Clique sur un bâtiment → donner une cible
-            	    if (troupeSelectionnee != null) {
-            	        Batiment b = getBatimentAtPosition(mx, my);
-            	        if (b != null) {
-            	            troupeSelectionnee.setCible(b);
-            	            repaint();
-            	            return;
-            	        }
-            	    }
-
-            	    // 4. Test portée (optionnel)
-            	    clickPoint = e.getPoint();
-            	    defensesEnPortee.clear();
-            	    defensesEnPortee.addAll(partie.getDefensesEnPortee(mx, my));
-
-            	    repaint();
-            	}
-            	
-            	// Retourne la troupe cliquée dans la barre du bas
-            	private Troupe getTroupeFromBar(int mouseX, int mouseY) {
-
-            	    int avatarSize = 50;
-            	    int spacing = 80;
-            	    int startX = 20;
-            	    int y = getHeight() - 80;
-
-            	    int index = 0;
-
-            	    for (Troupe t : partie.getTroupes()) {
-
-            	        int x = startX + index * spacing;
-
-            	        if (mouseX >= x && mouseX <= x + avatarSize &&
-            	            mouseY >= y && mouseY <= y + avatarSize) {
-            	            return t;
-            	        }
-
-            	        index++;
-            	    }
-
-            	    return null;
-            	}
-            });
+            
+                setBackground(new Color(34, 139, 34));
+            
         }
 
         @Override
@@ -179,6 +79,7 @@ public class Affichage extends JPanel {
 
             dessinerGrille(g2);
             dessinerHotelDeVille(g2);
+            dessinerBatimentsNormaux(g2);   
             dessinerDefenses(g2);
             dessinerResultat(g2);
             dessinerChrono(g2);
@@ -187,48 +88,43 @@ public class Affichage extends JPanel {
             g.setColor(new Color(50, 50, 50));
             g.fillRect(0, getHeight() - 100, getWidth(), 100);
 
-            dessinerTroupes(g);
-            drawAvatars(g);
+            dessinerTroupesSurCarte(g);
+            dessinerAvatarsBarre(g);
         }
 
-        // Méthode qui retourne la troupe située à la position du clic de la souris.
-        // Parcourir la liste des troupes et vérifier si les coordonnées de la souris
-        // Si une troupe est trouvée, la retourner, sinon retourner null.
-        private Troupe getTroupeAtPosition(int mouseX, int mouseY) {
-            for (Troupe t : partie.getTroupes()) {
-                int tx = t.getX();
-                int ty = t.getY();
-
-                if (mouseX >= tx && mouseX <= tx + 40 &&
-                        mouseY >= ty && mouseY <= ty + 40) {
-                    return t;
-                }
-            }
-            return null;
-        }
 
         // Méthode qui dessine toutes les troupes sur la carte.
         // Parcourir la liste des troupes et afficher l'image correspondant au type
         // de troupe (Barbare, Sorcier, Pekka) à sa position.
-        private void dessinerTroupes(Graphics g) {
+        private void dessinerTroupesSurCarte(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g;
+
             for (Troupe t : partie.getTroupes()) {
-                if (t instanceof Barbare) {
-                    g.drawImage(barbareImg, t.getX(), t.getY(), 40, 40, Affichage.this);
-                } else if (t instanceof Sorcier) {
-                    g.drawImage(sorcierImg, t.getX(), t.getY(), 40, 40, Affichage.this);
-                } else if (t instanceof Pekka) {
-                    g.drawImage(pekkaImg, t.getX(), t.getY(), 40, 40, Affichage.this);
+
+                // Animation de mort : on dessine une croix rouge à la place
+                if (t.isMortVisuelle()) {
+                    dessinerCroixMort(g2, t.getX(), t.getY(), 40);
+                    continue;
                 }
 
-                // Met en évidence la troupe sélectionnée
-                if (t == troupeSelectionnee) {
-                    g.setColor(Color.YELLOW);
-                    g.drawRect(t.getX(), t.getY(), 40, 40);
-                }
+                // Image de la troupe
+                Image img = imageFor(t);
+                if (img != null) g.drawImage(img, t.getX(), t.getY(), 40, 40, Affichage.this);
+                
+                // Barre de vie au-dessus de la troupe
+                dessinerBarreVie(g2, t.getX(), t.getY() - 8, 40, t.getHealth(), t.getHealthMax());
             }
         }
+        
+        /** Retourne l'image correspondant au type de troupe. */
+        private Image imageFor(Troupe t) {
+            if (t instanceof Barbare) return barbareImg;
+            if (t instanceof Sorcier) return sorcierImg;
+            if (t instanceof Pekka)   return pekkaImg;
+            return null;
+        }
 
-        // Dessine une grille sur le terrain
+		// Dessine une grille sur le terrain
         private void dessinerGrille(Graphics2D g2) {
             g2.setColor(new Color(0, 80, 0, 90));
 
@@ -266,7 +162,11 @@ public class Affichage extends JPanel {
                 // Bâtiment
                 int bx = d.getX() - DEF_SIZE / 2;
                 int by = d.getY() - DEF_SIZE / 2;
-                g2.setColor(touchee ? new Color(220, 50, 50) : new Color(160, 60, 60));
+                // Bâtiment — rouge vif si vient de tirer, rouge normal sinon
+                g2.setColor(d.vientDeTirer()  ? new Color(255,  50,  50) :
+                 touchee ? new Color(220,  50,  50) :
+                           new Color(160,  60,  60));
+                                                 
                 g2.fillRect(bx, by, DEF_SIZE, DEF_SIZE);
                 g2.setColor(Color.WHITE);
                 g2.setStroke(new BasicStroke(2));
@@ -291,35 +191,94 @@ public class Affichage extends JPanel {
             }
         }
         
-     // Retourne le bâtiment situé sous le clic de la souris
-        private Batiment getBatimentAtPosition(int mouseX, int mouseY) {
+     // Dessine l’hôtel de ville s’il n’est pas détruit
+        private void dessinerChateau(Graphics2D g2) {
+            if (partie.getChateau().estDetruit()) return;
 
-            final int DEF_SIZE = 30;
-            final int HOTEL_SIZE = 50;
+            final int SIZE = 50;
+            int x = partie.getChateau().getX();
+            int y = partie.getChateau().getY();
+            int bx = x - SIZE / 2;
+            int by = y - SIZE / 2;
 
-            // Vérifie d’abord les défenses
-            for (Defense d : partie.getDefenses()) {
-                int bx = d.getX() - DEF_SIZE / 2;
-                int by = d.getY() - DEF_SIZE / 2;
+            // Corps du bâtiment
+            g2.setColor(new Color(218, 165, 32));
+            g2.fillRect(bx, by, SIZE, SIZE);
+            g2.setColor(new Color(255, 215, 0));
+            g2.setStroke(new BasicStroke(3));
+            g2.drawRect(bx, by, SIZE, SIZE);
+            g2.setStroke(new BasicStroke(1));
 
-                if (mouseX >= bx && mouseX <= bx + DEF_SIZE &&
-                        mouseY >= by && mouseY <= by + DEF_SIZE) {
-                    return d;
-                }
-            }
+            // Toit
+            int[] xs = {bx, bx + SIZE / 2, bx + SIZE};
+            int[] ys = {by, by - 18, by};
+            g2.setColor(new Color(160, 82, 45));
+            g2.fillPolygon(xs, ys, 3);
+            g2.setColor(new Color(255, 215, 0));
+            g2.setStroke(new BasicStroke(2));
+            g2.drawPolygon(xs, ys, 3);
+            g2.setStroke(new BasicStroke(1));
 
-            // Vérifie ensuite l’hôtel de ville
-            Batiment hdv = partie.getHotelDeVille();
-            int bx = hdv.getX() - HOTEL_SIZE / 2;
-            int by = hdv.getY() - HOTEL_SIZE / 2;
+            // Étoile centrale
+            g2.setColor(new Color(255, 255, 200));
+            g2.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawLine(x - 10, y, x + 10, y);
+            g2.drawLine(x, y - 10, x, y + 10);
+            g2.setStroke(new BasicStroke(1));
 
-            if (mouseX >= bx && mouseX <= bx + HOTEL_SIZE &&
-                    mouseY >= by && mouseY <= by + HOTEL_SIZE) {
-                return hdv;
-            }
+            // Étiquette nom
+            g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+            FontMetrics fm = g2.getFontMetrics();
+            String label = partie.getChateau().getNom();
+            g2.setColor(Color.BLACK);
+            g2.drawString(label, x - fm.stringWidth(label) / 2 + 1, y + SIZE / 2 + 17);
+            g2.setColor(new Color(255, 240, 150));
+            g2.drawString(label, x - fm.stringWidth(label) / 2, y + SIZE / 2 + 16);
 
-            return null;
+            // Info PV
+            g2.setFont(new Font("SansSerif", Font.PLAIN, 9));
+            fm = g2.getFontMetrics();
+            String info = "PV:" + partie.getChateau().getPv();
+            g2.setColor(new Color(220, 220, 220));
+            g2.drawString(info, x - fm.stringWidth(info) / 2, y + SIZE / 2 + 27);
         }
+        
+        /**
+         * Dessine une barre de vie horizontale.
+         * Verte si > 50%, orange si > 25%, rouge sinon.
+         */
+        private void dessinerBarreVie(Graphics2D g2, int x, int y, int largeur, int pv, int pvMax) {
+            int hauteur   = 5;
+            float ratio   = (float) pv / pvMax;
+            int rempli    = (int) (largeur * ratio);
+
+            // Fond gris
+            g2.setColor(new Color(60, 60, 60));
+            g2.fillRect(x, y, largeur, hauteur);
+
+            // Barre colorée selon les PV restants
+            Color couleur = ratio > 0.5f ? new Color(50, 200, 50) :
+                            ratio > 0.25f ? new Color(255, 165, 0) :
+                                            new Color(220, 50, 50);
+            g2.setColor(couleur);
+            g2.fillRect(x, y, rempli, hauteur);
+
+            // Contour
+            g2.setColor(Color.BLACK);
+            g2.drawRect(x, y, largeur, hauteur);
+        }
+
+        /**
+         * Dessine une croix rouge à la position donnée (animation de mort).
+         */
+        private void dessinerCroixMort(Graphics2D g2, int x, int y, int taille) {
+            g2.setColor(new Color(220, 50, 50, 180));
+            g2.setStroke(new BasicStroke(4, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawLine(x + 5,        y + 5,        x + taille - 5, y + taille - 5);
+            g2.drawLine(x + taille - 5, y + 5,      x + 5,          y + taille - 5);
+            g2.setStroke(new BasicStroke(1));
+        }
+        
 
         // Dessine l’hôtel de ville s’il n’est pas détruit
         private void dessinerHotelDeVille(Graphics2D g2) {
@@ -372,6 +331,42 @@ public class Affichage extends JPanel {
             g2.setColor(new Color(220, 220, 220));
             g2.drawString(info, x - fm.stringWidth(info) / 2, y + SIZE / 2 + 27);
         }
+        
+        //	 Dessine les bâtiments normaux du village (ni défenses, ni hôtel de ville). */
+        private void dessinerBatimentsNormaux(Graphics2D g2) {
+            final int SIZE = 35;
+
+            for (Batiment b : partie.getAutresBatiments()) {
+                if (b.estDetruit()) continue;
+
+                int bx = b.getX() - SIZE / 2;
+                int by = b.getY() - SIZE / 2;
+
+                // Corps du bâtiment — couleur neutre bleue
+                g2.setColor(new Color(70, 130, 180));
+                g2.fillRect(bx, by, SIZE, SIZE);
+                g2.setColor(new Color(173, 216, 230));
+                g2.setStroke(new BasicStroke(2));
+                g2.drawRect(bx, by, SIZE, SIZE);
+                g2.setStroke(new BasicStroke(1));
+
+                // Nom
+                g2.setFont(new Font("SansSerif", Font.BOLD, 10));
+                FontMetrics fm = g2.getFontMetrics();
+                String label = b.getNom();
+                g2.setColor(Color.BLACK);
+                g2.drawString(label, b.getX() - fm.stringWidth(label) / 2 + 1, b.getY() + SIZE / 2 + 14);
+                g2.setColor(Color.WHITE);
+                g2.drawString(label, b.getX() - fm.stringWidth(label) / 2,     b.getY() + SIZE / 2 + 13);
+
+                // Info PV
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 9));
+                fm = g2.getFontMetrics();
+                String info = "PV:" + b.getPv();
+                g2.setColor(new Color(220, 220, 220));
+                g2.drawString(info, b.getX() - fm.stringWidth(info) / 2, b.getY() + SIZE / 2 + 24);
+            }
+        }
 
         public void dessinerChrono(Graphics2D g2) {
 
@@ -415,6 +410,16 @@ public class Affichage extends JPanel {
                         getWidth() / 2 - g2.getFontMetrics().stringWidth(msg) / 2,
                         55);
             }
+            
+            // Score en haut à droite
+            g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+            String scoreStr = "Score : " + partie.getScore();
+            FontMetrics fmScore = g2.getFontMetrics();
+            int sx = getWidth() - fmScore.stringWidth(scoreStr) - 16;
+            g2.setColor(new Color(0, 0, 0, 180));
+            g2.fillRoundRect(sx - 8, 8, fmScore.stringWidth(scoreStr) + 16, 32, 10, 10);
+            g2.setColor(new Color(255, 215, 0));
+            g2.drawString(scoreStr, sx, 30);
         }
 
         public void dessinerResultat(Graphics2D g2) {
@@ -451,17 +456,6 @@ public class Affichage extends JPanel {
         }
     }
 
-    public void demarrerChrono() {
-
-        // Vérifie si le chrono est déjà lancé
-        // Cela évite de démarrer plusieurs timers en même temps
-        if (!chrono.isRunning()) {
-
-            // Démarre le Timer → il va exécuter l'action toutes les secondes
-            chrono.start();
-        }
-    }
-
  // Dessine les troupes du joueur dans la barre du bas
  // Ces troupes sont cliquables pour être sélectionnées
  private void drawAvatars(Graphics g) {
@@ -484,17 +478,69 @@ public class Affichage extends JPanel {
              g.drawImage(sorcierImg, x, y, avatarSize, avatarSize, this);
          } else if (t instanceof Pekka) {
              g.drawImage(pekkaImg, x, y, avatarSize, avatarSize, this);
-         }
-
-         // Si c'est la troupe sélectionnée → contour jaune
-         if (t == troupeSelectionnee) {
-             g.setColor(Color.YELLOW);
-             g.drawRect(x, y, avatarSize, avatarSize);
-         }
+         }       
 
          index++;
          g.setColor(Color.WHITE);
          g.drawString("PV:" + t.getHealth(), x, y + 75);
      }
- }
+ }  	
+ 	
+ 	
+ 	private void dessinerAvatarsBarre(Graphics g) {
+ 	    Graphics2D g2 = (Graphics2D) g;
+ 	    String typeSelectionne = controller.getTypeSelectionne();
+
+ 	    // Ordre des avatars : Pekka, Sorcier, Barbare
+ 	    Image[]  imgs   = {pekkaImg,  sorcierImg, barbareImg};
+ 	    String[] types  = {"Pekka",   "Sorcier",  "Barbare"};
+ 	    int[]    stocks = {
+ 	        partie.getStockPekka(),
+ 	        partie.getStockSorcier(),
+ 	        partie.getStockBarbare()
+ 	    };
+
+ 	    int avatarSize = 50, spacing = 80, startX = 20;
+ 	    int y = getHeight() - 80;
+
+ 	    for (int i = 0; i < 3; i++) {
+ 	        int x = startX + i * spacing;
+
+ 	        // Image
+ 	        if (imgs[i] != null) g.drawImage(imgs[i], x, y, avatarSize, avatarSize, Affichage.this);
+
+ 	        // Contour jaune si ce type est sélectionné
+ 	        if (types[i].equals(typeSelectionne)) {
+ 	            g.setColor(Color.YELLOW);
+ 	            ((Graphics2D) g).setStroke(new BasicStroke(3));
+ 	            g.drawRect(x, y, avatarSize, avatarSize);
+ 	            ((Graphics2D) g).setStroke(new BasicStroke(1));
+ 	        }
+
+ 	        // Stock disponible
+ 	        g.setColor(stocks[i] > 0 ? Color.WHITE : new Color(180, 60, 60));
+ 	        g.drawString("x" + stocks[i], x + avatarSize - 15, y + avatarSize - 5);
+
+ 	        // Nom du type
+ 	        g.setColor(Color.LIGHT_GRAY);
+ 	        g.drawString(types[i], x, y + avatarSize + 15);
+ 	    }
+ 	}
+ 
+ 
+ 
+	 // Retourne le panneau principal de la carte
+	 public JPanel getMapPanel() {
+	     return mapPanel;
+	 }
+	
+	 // Met à jour les informations du clic pour l'affichage
+	 public void setClickInfo(int x, int y, List<Defense> defenses) {
+	     this.clickPoint = new Point(x, y);
+	     this.defensesEnPortee.clear();
+	     this.defensesEnPortee.addAll(defenses);
+	 }
+	 
+	 
+	 
 }

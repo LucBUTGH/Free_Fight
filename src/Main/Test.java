@@ -1,10 +1,11 @@
-package test;
-
-import model.*;
-import view.Affichage;
-import view.StartPanel;
+package Main;
 
 import javax.swing.JFrame;
+
+import controller.GameController;
+import model.Partie;
+import view.Affichage;
+import view.StartPanel;
 
 public class Test {
 
@@ -34,27 +35,29 @@ public class Test {
     public void lancerJeu() {
 
         fenetre.setTitle("FreeFight – Test Portée Défenses");
-
-        // Création de la partie
+        
         Partie partie = new Partie();
+     
 
-        // Création des troupes dans la partie
-        partie.ajouterTroupe(new Barbare(50, 500));
-        partie.ajouterTroupe(new Sorcier(120, 500));
-        partie.ajouterTroupe(new Pekka(190, 500));
+        // Création du contrôleur
+        GameController controller = new GameController(partie);
+
+        // Création de l'affichage à partir de la partie du contrôleur
+        affichage = new Affichage(partie, controller);
+
+        // On lie l'affichage au contrôleur
+        controller.setAffichage(affichage);
+
+        // On démarre le jeu
+        controller.demarrer();
 
         // Remplacer le contenu de la fenêtre
         fenetre.setVisible(false);
         fenetre.remove(startPanel);
 
-        // On passe la partie à l'affichage
-        affichage = new Affichage(partie);
-
-        // On passe la partie à l'affichage pour que la vue puisse
-        // lire l'état du jeu (troupes, défenses, hôtel de ville, chrono)
-        // sans stocker elle-même ces données.
+        // On ajoute la vue principale
         fenetre.add(affichage);
-        
+
         fenetre.pack();
         fenetre.setLocationRelativeTo(null);
         fenetre.setVisible(true);

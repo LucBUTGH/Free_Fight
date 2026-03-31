@@ -3,7 +3,7 @@ package view;
 import java.awt.*;
 import javax.swing.*;
 
-import test.Test;
+import Main.Test;
 
 public class StartPanel extends JPanel {
     private final JButton startButton;
