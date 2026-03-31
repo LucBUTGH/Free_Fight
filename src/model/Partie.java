@@ -53,36 +53,67 @@ public class Partie {
         troupes.add(troupe);           // ajoute la troupe à la liste
     }
 
- // Met à jour l’état du jeu
- // Chaque troupe agit seulement si le joueur lui a donné une cible
+ /* Met à jour l’état du jeu
+ * Chaque troupe agit seulement si le joueur lui a donné une cible
+ * Gère les spawn du chateau
+ * Exécute les action des troupes et supprime les troupes mortes 
+ * */
  public void update() {
+	 // Création du chateau dans le modèle 
 	 Chateau chateau = getChateau();
-
+	 
+	 /*
+	  * Le chateau génère des troupes une fois qu'une troupe est dans
+	  * sa portée 
+	  */
 	 if (!chateau.hasSpawn()) {
+		 
+		 // Parcours les troupes présentes sur le terrain
 	     for (Troupe t : troupes) {
+	    	 
+	    	 // Vérifie si une troupe est dans la zone du chateau
 	         if (chateau.estAPortee(t.getX(), t.getY())) {
-
+	        	 
+	        	 // Génère les troupes ennemies 
 	             List<Troupe> nouvelles = chateau.spawnDefense();
+	             
+	             // Ajout à la liste principale 
 	             troupes.addAll(nouvelles);
-
+	             
+	             // Marque que le chateau a déjà spawn
 	             chateau.setSpawn(true);
 	             break;
 	         }
 	     }
 	 }
 	 
+	 /* Gestion de l'attribution des cibles 
+	  * Chaque troupe cherche une cible ennemie 
+	  * si elle n'en n'a pas une 
+	  * si sa cible actuelle est dead
+	  */
 	 for (Troupe t1 : troupes) {
 		    // si la troupe a déjà une cible vivante, on continue
 		    if (t1.getCibleTroupe() != null && !t1.getCibleTroupe().estMorte()) continue;
-
+		    
+		    // recherche d'une nouvelle cible
 		    for (Troupe t2 : troupes) {
-		        if (t1 == t2) continue;            // pas se cibler soi-même
-		        if (t1.getCamp() == t2.getCamp()) continue; // ne cible que les ennemis
-
-		        t1.setCibleTroupe(t2);  // trouve la première cible ennemie
-		        break;                  // stop après avoir trouvé un ennemi
+		    	
+		    	// La troupe s'ignore elle-mm
+		        if (t1 == t2) continue;   
+		        
+		        // La troupe ignore les troupes de son camp
+		        if (t1.getCamp() == t2.getCamp()) continue; 
+		        
+		        // assigne la première troupe ennemie comme cible
+		        t1.setCibleTroupe(t2); 
+		        
+		        // Stop après avoir trouvé une cible
+		        break;              
 		    }
 	}
+	 
+	// Comportement normal : se déplacer / attaquer un bat
     for (Troupe t : troupes) {
          t.agirManuellement();
      }
