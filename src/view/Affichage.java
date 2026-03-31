@@ -182,13 +182,19 @@ public class Affichage extends JPanel {
             dessinerDefenses(g2);
             dessinerResultat(g2);
             dessinerChrono(g2);
+            dessinerEtoiles(g2);
 
-            // Dessine la barre en bas de l’écran
+            // Dessine la barre en bas de l'écran
             g.setColor(new Color(50, 50, 50));
             g.fillRect(0, getHeight() - 100, getWidth(), 100);
 
             dessinerTroupes(g);
             drawAvatars(g);
+
+            // Écran de fin par-dessus tout
+            if (partie.estTerminee()) {
+                dessinerEcranFin(g2);
+            }
         }
 
         // Méthode qui retourne la troupe située à la position du clic de la souris.
@@ -415,6 +421,147 @@ public class Affichage extends JPanel {
                         getWidth() / 2 - g2.getFontMetrics().stringWidth(msg) / 2,
                         55);
             }
+        }
+
+        // Dessine les 3 étoiles (style Clash of Clans)
+        private void dessinerEtoiles(Graphics2D g2) {
+            int etoiles = partie.getEtoiles();
+            int pourcentage = partie.getPourcentageDestruction();
+
+            int starSize = 28;
+            int spacing = 8;
+            int totalWidth = 3 * starSize + 2 * spacing;
+            int startX = getWidth() / 2 - totalWidth / 2;
+            int y = 46;
+
+            // Fond arrondi derrière les étoiles + pourcentage
+            String pctText = pourcentage + "%";
+            g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+            FontMetrics fm = g2.getFontMetrics();
+            int bgWidth = totalWidth + 16 + fm.stringWidth(pctText) + 10;
+            int bgX = getWidth() / 2 - bgWidth / 2;
+            g2.setColor(new Color(0, 0, 0, 160));
+            g2.fillRoundRect(bgX, y - 4, bgWidth, starSize + 8, 10, 10);
+
+            // Dessiner chaque étoile
+            for (int i = 0; i < 3; i++) {
+                int cx = startX + i * (starSize + spacing) + starSize / 2;
+                int cy = y + starSize / 2;
+
+                int[] xPoints = new int[10];
+                int[] yPoints = new int[10];
+                double outerR = starSize / 2.0;
+                double innerR = outerR * 0.4;
+
+                for (int j = 0; j < 10; j++) {
+                    double angle = Math.PI / 2 + j * Math.PI / 5;
+                    double r = (j % 2 == 0) ? outerR : innerR;
+                    xPoints[j] = cx + (int) (Math.cos(angle) * r);
+                    yPoints[j] = cy - (int) (Math.sin(angle) * r);
+                }
+
+                if (i < etoiles) {
+                    // Étoile remplie (dorée)
+                    g2.setColor(new Color(255, 215, 0));
+                    g2.fillPolygon(xPoints, yPoints, 10);
+                    g2.setColor(new Color(200, 160, 0));
+                    g2.setStroke(new BasicStroke(2));
+                    g2.drawPolygon(xPoints, yPoints, 10);
+                    g2.setStroke(new BasicStroke(1));
+                } else {
+                    // Étoile vide (silhouette grise)
+                    g2.setColor(new Color(80, 80, 80));
+                    g2.fillPolygon(xPoints, yPoints, 10);
+                    g2.setColor(new Color(140, 140, 140));
+                    g2.setStroke(new BasicStroke(2));
+                    g2.drawPolygon(xPoints, yPoints, 10);
+                    g2.setStroke(new BasicStroke(1));
+                }
+            }
+
+            // Pourcentage de destruction à droite des étoiles
+            int textX = startX + totalWidth + 10;
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+            g2.drawString(pctText, textX, y + starSize / 2 + 5);
+        }
+
+        // Dessine l'écran de fin (victoire ou défaite)
+        private void dessinerEcranFin(Graphics2D g2) {
+            int w = getWidth();
+            int h = getHeight();
+
+            // Fond semi-transparent
+            g2.setColor(new Color(0, 0, 0, 150));
+            g2.fillRect(0, 0, w, h);
+
+            // Panneau central
+            int panelW = 400;
+            int panelH = 220;
+            int px = w / 2 - panelW / 2;
+            int py = h / 2 - panelH / 2;
+
+            boolean victoire = partie.estGagnee();
+            Color bordure = victoire ? new Color(255, 215, 0) : new Color(200, 50, 50);
+
+            g2.setColor(new Color(30, 30, 30, 230));
+            g2.fillRoundRect(px, py, panelW, panelH, 20, 20);
+            g2.setColor(bordure);
+            g2.setStroke(new BasicStroke(3));
+            g2.drawRoundRect(px, py, panelW, panelH, 20, 20);
+            g2.setStroke(new BasicStroke(1));
+
+            // Titre VICTOIRE / DÉFAITE
+            String titre = victoire ? "VICTOIRE" : "DÉFAITE";
+            g2.setFont(new Font("SansSerif", Font.BOLD, 36));
+            FontMetrics fm = g2.getFontMetrics();
+            g2.setColor(bordure);
+            g2.drawString(titre, w / 2 - fm.stringWidth(titre) / 2, py + 55);
+
+            // Étoiles au centre du panneau
+            int etoiles = partie.getEtoiles();
+            int starSize = 40;
+            int spacing = 12;
+            int totalStarW = 3 * starSize + 2 * spacing;
+            int starStartX = w / 2 - totalStarW / 2;
+            int starY = py + 80;
+
+            for (int i = 0; i < 3; i++) {
+                int cx = starStartX + i * (starSize + spacing) + starSize / 2;
+                int cy = starY + starSize / 2;
+
+                int[] xPoints = new int[10];
+                int[] yPoints = new int[10];
+                double outerR = starSize / 2.0;
+                double innerR = outerR * 0.4;
+
+                for (int j = 0; j < 10; j++) {
+                    double angle = Math.PI / 2 + j * Math.PI / 5;
+                    double r = (j % 2 == 0) ? outerR : innerR;
+                    xPoints[j] = cx + (int) (Math.cos(angle) * r);
+                    yPoints[j] = cy - (int) (Math.sin(angle) * r);
+                }
+
+                if (i < etoiles) {
+                    g2.setColor(new Color(255, 215, 0));
+                    g2.fillPolygon(xPoints, yPoints, 10);
+                    g2.setColor(new Color(200, 160, 0));
+                } else {
+                    g2.setColor(new Color(80, 80, 80));
+                    g2.fillPolygon(xPoints, yPoints, 10);
+                    g2.setColor(new Color(140, 140, 140));
+                }
+                g2.setStroke(new BasicStroke(2));
+                g2.drawPolygon(xPoints, yPoints, 10);
+                g2.setStroke(new BasicStroke(1));
+            }
+
+            // Pourcentage de destruction
+            String pct = partie.getPourcentageDestruction() + "% détruit";
+            g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
+            fm = g2.getFontMetrics();
+            g2.setColor(Color.WHITE);
+            g2.drawString(pct, w / 2 - fm.stringWidth(pct) / 2, py + panelH - 30);
         }
 
         public void dessinerResultat(Graphics2D g2) {

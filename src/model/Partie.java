@@ -101,4 +101,50 @@ public class Partie {
     public boolean tempsEcoule() {
         return secondesRestantes <= 0;
     }
+
+    // Retourne le pourcentage de destruction (0 à 100)
+    public int getPourcentageDestruction() {
+        int total = 1 + defenses.size() + autresBatiments.size(); // +1 pour l'hôtel de ville
+        int detruits = 0;
+
+        if (hotelDeVille.estDetruit()) detruits++;
+        for (Defense d : defenses) {
+            if (d.estDetruit()) detruits++;
+        }
+        for (Batiment b : autresBatiments) {
+            if (b.estDetruit()) detruits++;
+        }
+
+        return (detruits * 100) / total;
+    }
+
+    // Retourne le nombre d'étoiles obtenues (0 à 3)
+    // 1 étoile : hôtel de ville détruit
+    // 1 étoile : 50% des bâtiments détruits
+    // 1 étoile : 100% des bâtiments détruits
+    public int getEtoiles() {
+        int etoiles = 0;
+        int pourcentage = getPourcentageDestruction();
+
+        if (hotelDeVille.estDetruit()) etoiles++;
+        if (pourcentage >= 50) etoiles++;
+        if (pourcentage >= 100) etoiles++;
+
+        return etoiles;
+    }
+
+    // Indique si la partie est terminée
+    public boolean estTerminee() {
+        return tempsEcoule() || getPourcentageDestruction() >= 100;
+    }
+
+    // Indique si le joueur a gagné (au moins 1 étoile)
+    public boolean estGagnee() {
+        return estTerminee() && getEtoiles() > 0;
+    }
+
+    // Indique si le joueur a perdu (0 étoile et temps écoulé)
+    public boolean estPerdue() {
+        return estTerminee() && getEtoiles() == 0;
+    }
 }
