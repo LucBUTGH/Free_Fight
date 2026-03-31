@@ -4,17 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * La Classe représente l'état complet d'une partie en cours.
- * 
- * Elle contient toutes les données du jeu :
+ * Classe centrale du modèle : état complet d'une partie en cours.
+ *
+ * Contient :
  * - Les troupes déployées par le joueur
  * - Les défenses et bâtiments du village ennemi
+ * - Le Château de Clan
  * - Le chronomètre
  * - Le score
  * - Les stocks de troupes disponibles
- * 
- * Elle expose aussi la méthode update() qui fait avancer le jeu d'un tick,
- * appelée toutes les 40ms par le timer dans GameController.
+ *
+ * La méthode update() fait avancer le jeu d'un tick (appelée toutes les 40ms).
+ * Aucune logique d'affichage ici — Partie ne connaît pas Swing.
  */
 public class Partie {
 
@@ -22,43 +23,36 @@ public class Partie {
     // Troupes actuellement sur la carte (déployées ou en attente)
     private List<Troupe> troupes;
 
-    // Défenses du village ennemi (Canon, Tour Archer, Mortier...)
+    // Défenses du village ennemi
     private List<Defense> defenses;
 
-    // Bâtiment principal du village — objectif prioritaire des troupes
+    // Bâtiment principal — objectif prioritaire des troupes du joueur
     private Batiment hotelDeVille;
 
-    // Autres bâtiments normaux (Cabane en Or, Extracteur, Laboratoire...)
-    // Ciblés en dernier recours quand il n'y a plus de défenses
+    // Bâtiments normaux — ciblés en dernier recours
     private List<Batiment> autresBatiments;
 
+    // Château de Clan — défense spéciale qui spawne des troupes défensives
+    private Chateau chateau;
 
-    // Temps restant en secondes. Décrémenté chaque seconde par timerChrono.
-    // La partie s'arrête quand il atteint 0.
+
+    // Décrémenté chaque seconde — la partie s'arrête quand il atteint 0
     private int secondesRestantes;
 
 
-    // Nombre de troupes de chaque type encore disponibles pour le déploiement.
-    // Ces valeurs diminuent à chaque déploiement et ne se rechargent pas.
+    // Nombre de troupes disponibles par type — diminuent à chaque déploiement
     private int stockBarbare;
     private int stockSorcier;
     private int stockPekka;
 
 
-    // Score accumulé au fil de la partie.
-    // Augmente quand un bâtiment ennemi est détruit.
+    // Augmente quand un bâtiment ennemi est détruit
     private int score;
-    
- // Le chateau de clan
-    private Chateau chateau;
 
 
     /**
-     * Initialise une nouvelle partie avec tous les éléments du village ennemi
+     * Initialise une nouvelle partie avec le village ennemi complet
      * et les stocks de troupes du joueur.
-     * 
-     * C'est ici qu'on configure le "niveau" : positions des bâtiments,
-     * PV des défenses, cadence de tir, stocks de troupes disponibles.
      */
     public Partie() {
         troupes         = new ArrayList<>();
@@ -68,20 +62,20 @@ public class Partie {
         secondesRestantes = 120; // 2 minutes de jeu
         score             = 0;
 
-        // Bâtiment principal — le détruire rapporte le plus de points
+        // Bâtiment principal — 500 points si détruit
         hotelDeVille = new Batiment("Hôtel de Ville", 1500, 375, 290);
-        
-        chateau = new Chateau("Château", 500, 150, 600, 300, 30, 25);
 
+        // Château de Clan — spawne des défenseurs quand attaqué
+        // Chateau(nom, pv, portee, degats, cadenceTir, x, y)
+        chateau = new Chateau("Château de Clan", 500, 150, 20, 30, 600, 300);
 
         // Défenses du village
-        // Signature : Defense(nom, pv, portee, degats, cadenceTir, x, y)
-        // cadenceTir : plus c'est grand, plus la défense tire lentement
+        // Defense(nom, pv, portee, degats, cadenceTir, x, y)
         defenses.add(new Defense("Canon",       200, 150, 15, 30, 200, 200));
         defenses.add(new Defense("Tour Archer", 100, 220,  8, 20, 500, 280));
         defenses.add(new Defense("Mortier",     300, 180, 25, 40, 360, 430));
 
-        // Bâtiments normaux — pas de portée, juste des PV et une position
+        // Bâtiments normaux
         autresBatiments.add(new Batiment("Cabane en Or", 500, 600, 150));
         autresBatiments.add(new Batiment("Extracteur",   300, 700, 300));
         autresBatiments.add(new Batiment("Laboratoire",  800, 250, 450));
@@ -95,55 +89,67 @@ public class Partie {
 
     /**
      * Met à jour l'état du jeu pour un tick (appelé toutes les 40ms).
-     * 
-     * Ordre d'exécution important :
-     * 1. Les troupes bougent et attaquent
-     * 2. Les défenses ripostent
-     * 3. On comptabilise les destructions dans le score
-     * 4. On supprime les troupes mortes
-     * 
-     * Note : on ne supprime pas les troupes mortes avant la fin du tick,
-     * sinon on risque une ConcurrentModificationException en modifiant
-     * la liste pendant qu'on la parcourt.
+     *
+     * Ordre d'exécution :
+     * 1. Spawn du Château de Clan si une troupe entre dans sa portée
+     * 2. Ciblage troupe vs troupe
+     * 3. Déplacement et attaque des troupes
+     * 4. Tir des défenses
+     * 5. Calcul du score
+     * 6. Suppression des troupes mortes
      */
     public void update() {
 
-        // 1. Chaque troupe déployée agit (déplacement + attaque)
-        for (Troupe t : troupes) {
-            if (!t.isDeployee()) continue; // les troupes non déployées sont ignorées
+        // ── 1. Spawn du Château de Clan 
+        // Se déclenche une seule fois quand une troupe du joueur entre dans la portée
+        if (!chateau.hasSpawn()) {
+            for (Troupe t : troupes) {
+                if (t.getCamp() == Camp.JOUEUR && chateau.estAPortee(t.getX(), t.getY())) {
+                    List<Troupe> nouvelles = chateau.spawnDefense();
+                    troupes.addAll(nouvelles);
+                    chateau.setSpawn(true);
+                    break;
+                }
+            }
+        }
 
-            // Réassigner une cible si la cible actuelle est nulle ou détruite
-            if (t.getCible() == null || t.getCible().estDetruit()) {
-                Batiment nouvelleCible = t.choisirCible(defenses, hotelDeVille, autresBatiments);
-                t.setCible(nouvelleCible);
+        // ── 2. Ciblage troupe vs troupe
+        // Chaque troupe cherche une cible ennemie si elle n'en a pas déjà une vivante
+        for (Troupe t1 : troupes) {
+            if (t1.getCibleTroupe() != null && !t1.getCibleTroupe().estMorte()) continue;
+
+            for (Troupe t2 : troupes) {
+                if (t1 == t2) continue;                     // pas se cibler soi-même
+                if (t1.getCamp() == t2.getCamp()) continue; // pas cibler un allié
+                t1.setCibleTroupe(t2);
+                break;
+            }
+        }
+
+        // ── 3. Déplacement et attaque des troupes 
+        for (Troupe t : troupes) {
+            if (!t.isDeployee()) continue;
+
+            // Réassigner une cible bâtiment uniquement pour les troupes du JOUEUR
+            // Les troupes ENNEMI n'attaquent que les troupes adverses
+            if (t.getCamp() == Camp.JOUEUR) {
+                if (t.getCible() == null || t.getCible().estDetruit()) {
+                    Batiment nouvelleCible = t.choisirCible(defenses, hotelDeVille, autresBatiments);
+                    t.setCible(nouvelleCible);
+                }
             }
 
             t.agirManuellement();
         }
 
-        
-        Chateau chateau = getChateau();
-
-   	 if (!chateau.hasSpawn()) {
-   	     for (Troupe t : troupes) {
-   	         if (chateau.estAPortee(t.getX(), t.getY())) {
-
-   	             List<Troupe> nouvelles = chateau.spawnDefense();
-   	             troupes.addAll(nouvelles);
-
-   	             chateau.setSpawn(true);
-   	             break;
-   	         }
-   	     }
-   	 }
-   	 
-        // 2. Chaque défense tire sur les troupes à portée
+        // ── 4. Tir des défenses 
         for (Defense d : defenses) {
             d.agir(troupes);
         }
+        // Le château tire aussi comme une défense normale
+        chateau.agir(troupes);
 
-        // 3. Score : on détecte les bâtiments détruits ce tick
-        // On utilise aEteComptee() pour ne scorer qu'une seule fois par bâtiment
+        // aEteComptee() évite de scorer plusieurs fois le même bâtiment
         for (Defense d : defenses) {
             if (d.estDetruit() && !d.aEteComptee()) {
                 score += 100;
@@ -160,31 +166,34 @@ public class Partie {
             score += 500;
             hotelDeVille.marquerComptee();
         }
+        if (chateau.estDetruit() && !chateau.aEteComptee()) {
+            score += 200;
+            chateau.marquerComptee();
+        }
 
-        // 4. Avance l'animation de mort et supprime les troupes mortes
-        // removeIf supprime les éléments pour lesquels avancerMort() retourne true
+        // ── 6. Suppression des troupes mortes ─────────────────────────────────
+        // avancerMort() retourne true quand l'animation de mort est terminée
         troupes.removeIf(Troupe::avancerMort);
     }
 
 
     /**
-     * Déploie un certain nombre de troupes d'un type donné à une position.
-     * 
-     * Processus pour chaque troupe :
-     * 1. Vérifier que le stock n'est pas vide
-     * 2. Créer l'instance de la troupe
-     * 3. La marquer comme déployée (elle apparaît sur la carte)
-     * 4. Lui assigner automatiquement une cible
-     * 5. L'ajouter à la liste des troupes actives
-     * 
-     * Les troupes sont légèrement espacées (i * 15 pixels) pour ne pas
-     * toutes être empilées au même endroit.
-     * 
+     * Déploie n troupes d'un type donné à la position (x, y).
+     *
+     * Pour chaque troupe :
+     * 1. Vérifie le stock
+     * 2. Crée la troupe
+     * 3. La marque comme déployée
+     * 4. Lui assigne une cible automatique
+     * 5. L'ajoute à la liste
+     *
+     * Les troupes sont espacées de 15px pour ne pas être empilées.
+     *
      * @param type      "Barbare", "Sorcier" ou "Pekka"
      * @param quantite  Nombre de troupes à déployer
-     * @param x         Position X du clic de déploiement
-     * @param y         Position Y du clic de déploiement
-     * @return          Nombre de troupes réellement déployées (≤ quantite)
+     * @param x         Position X du clic
+     * @param y         Position Y du clic
+     * @return          Nombre réellement déployé (limité par le stock)
      */
     public int deployerTroupes(String type, int quantite, int x, int y) {
         int deployed = 0;
@@ -192,10 +201,9 @@ public class Partie {
         for (int i = 0; i < quantite; i++) {
             Troupe t = null;
 
-            // Création selon le type et décrémentation du stock
             switch (type) {
                 case "Barbare":
-                    if (stockBarbare <= 0) break; // stock épuisé
+                    if (stockBarbare <= 0) break;
                     t = new Barbare(x + i * 15, y);
                     stockBarbare--;
                     break;
@@ -211,13 +219,12 @@ public class Partie {
                     break;
             }
 
-            // Si t est null, le stock était vide → on arrête la boucle
-            if (t == null) break;
+            if (t == null) break; // stock épuisé
 
-            // Déploiement : la troupe apparaît sur la carte
+            // Camp JOUEUR par défaut (défini dans le constructeur de Troupe)
             t.deployer(x + i * 15, y);
 
-            // Assignation automatique de la cible la plus proche
+            // Cible automatique la plus proche
             Batiment cible = t.choisirCible(defenses, hotelDeVille, autresBatiments);
             t.setCible(cible);
 
@@ -229,61 +236,33 @@ public class Partie {
     }
 
 
-    /**
-     * Réduit le temps restant de 1 seconde.
-     * Appelé par timerChrono dans GameController toutes les secondes.
-     * On s'assure de ne pas descendre sous 0.
-     */
+    /** Réduit le temps restant de 1 seconde. Ne descend pas sous 0. */
     public void decrementerTemps() {
         if (secondesRestantes > 0) secondesRestantes--;
     }
 
-    /**
-     * Indique si le temps de la partie est écoulé.
-     * @return true si secondesRestantes == 0
-     */
+    /** Retourne true si le temps est écoulé. */
     public boolean tempsEcoule() {
         return secondesRestantes <= 0;
     }
 
 
-    /** Retourne la liste de toutes les troupes (déployées ou non). */
-    public List<Troupe> getTroupes()          { return troupes;           }
+    public List<Troupe>    getTroupes()           { return troupes;           }
+    public List<Defense>   getDefenses()          { return defenses;          }
+    public Batiment        getHotelDeVille()      { return hotelDeVille;      }
+    public List<Batiment>  getAutresBatiments()   { return autresBatiments;   }
+    public Chateau         getChateau()           { return chateau;           }
+    public int             getSecondesRestantes() { return secondesRestantes; }
+    public int             getScore()             { return score;             }
+    public int             getStockBarbare()      { return stockBarbare;      }
+    public int             getStockSorcier()      { return stockSorcier;      }
+    public int             getStockPekka()        { return stockPekka;        }
 
-    /** Retourne la liste des défenses du village. */
-    public List<Defense> getDefenses()        { return defenses;          }
-
-    /** Retourne l'hôtel de ville. */
-    public Batiment getHotelDeVille()         { return hotelDeVille;      }
-
-    /** Retourne les bâtiments normaux (non-défenses). */
-    public List<Batiment> getAutresBatiments(){ return autresBatiments;   }
-
-    /** Retourne le temps restant en secondes. */
-    public int getSecondesRestantes()         { return secondesRestantes; }
-
-    /** Retourne le score actuel. */
-    public int getScore()                     { return score;             }
-
-    /** Ajoute des points au score (utilisable pour des bonus futurs). */
-    public void ajouterScore(int points)      { score += points;          }
-
-    /** Retourne le stock de Barbares restants. */
-    public int getStockBarbare()              { return stockBarbare;      }
-
-    /** Retourne le stock de Sorciers restants. */
-    public int getStockSorcier()              { return stockSorcier;      }
-
-    /** Retourne le stock de Pekkas restants. */
-    public int getStockPekka()                { return stockPekka;        }
+    public void ajouterScore(int points) { score += points; }
 
     /**
-     * Retourne les défenses dont le rayon couvre le point (x, y).
+     * Retourne les défenses dont la portée couvre le point (x, y).
      * Utilisé pour le test visuel de portée (clic sur la carte).
-     * 
-     * @param x  Coordonnée X du point testé
-     * @param y  Coordonnée Y du point testé
-     * @return   Liste des défenses à portée de ce point
      */
     public List<Defense> getDefensesEnPortee(int x, int y) {
         List<Defense> resultat = new ArrayList<>();
@@ -294,14 +273,10 @@ public class Partie {
     }
 
     /**
-     * Ajoute une troupe directement à la liste (utilisé pour les tests).
+     * Ajoute une troupe directement à la liste.
      * En conditions normales, passer par deployerTroupes() à la place.
      */
     public void ajouterTroupe(Troupe troupe) {
         troupes.add(troupe);
-    }
-    
-    public Chateau getChateau() {
-        return chateau;
     }
 }
