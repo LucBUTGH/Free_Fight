@@ -48,7 +48,7 @@ public class GameController {
     public GameController(Partie partie) {
         this.partie = partie;
 
-        // Boucle de jeu (40 ms ≈ 25 fps)
+        // Boucle de jeu (40 ms)
         // Fait avancer le jeu et redessine l'écran à chaque tick
         timerJeu = new Timer(40, e -> {
             partie.update();
@@ -102,7 +102,7 @@ public class GameController {
     /**
      * Interprète un clic souris selon le contexte :
      * 1. Clic sur un avatar dans la barre → sélectionner le type
-     * 2. Type sélectionné + clic sur la carte → demander la quantité et déployer
+     * 2. Type sélectionné + clic sur la carte 
      * 3. Clic libre → test de portée des défenses
      *
      * @param mx  Coordonnée X du clic
@@ -118,47 +118,37 @@ public class GameController {
             return;
         }
 
-        // 2. Type sélectionné + clic sur la carte → déploiement
+        // 2. Type sélectionné + clic sur la carte → déployer UNE troupe
         if (typeSelectionne != null) {
             int stock = getStock(typeSelectionne);
 
-            // Vérification que le stock n'est pas vide
+            // Stock épuisé → afficher un message à l'écran et désélectionner
             if (stock <= 0) {
-                JOptionPane.showMessageDialog(affichage,
-                    "Plus de " + typeSelectionne + " disponible !",
-                    "Stock vide", JOptionPane.WARNING_MESSAGE);
+                affichage.setMessageStock("Plus de " + typeSelectionne + " disponible !");
                 typeSelectionne = null;
+                affichage.repaint();
                 return;
             }
 
-            // Demande la quantité à déployer
-            String input = JOptionPane.showInputDialog(
-                affichage,
-                "Combien de " + typeSelectionne + " voulez-vous envoyer ? (max " + stock + ")",
-                "Déployer",
-                JOptionPane.QUESTION_MESSAGE
-            );
+            // Déployer une seule troupe à chaque clic
+            partie.deployerTroupes(typeSelectionne, 1, mx, my);
 
-            if (input == null) return; // le joueur a annulé
-
-            try {
-                int quantite = Integer.parseInt(input.trim());
-                if (quantite <= 0) return;
-                partie.deployerTroupes(typeSelectionne, quantite, mx, my);
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(affichage, "Entrez un nombre valide.");
+            // Si le stock est maintenant vide on affiche le message
+            if (getStock(typeSelectionne) <= 0) {
+                affichage.setMessageStock("Plus de " + typeSelectionne + " disponible !");
+                typeSelectionne = null;
             }
 
-            typeSelectionne = null;
             affichage.repaint();
             return;
         }
 
-        // 3. Clic libre → test de portée des défenses
+        // 3. Clic libre test de portée des défenses
         List<Defense> enPortee = partie.getDefensesEnPortee(mx, my);
         affichage.setClickInfo(mx, my, enPortee);
         affichage.repaint();
     }
+
 
 
     /**

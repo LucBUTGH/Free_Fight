@@ -9,18 +9,17 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Point d'entrée de l'application.
  *
  * Utilise un CardLayout pour afficher StartPanel puis Affichage
  * dans la même fenêtre, sans jamais la recréer ni la cacher.
  *
- * Séquence de lancement :
- * 1. new Partie()          → crée le modèle
- * 2. new GameController()  → crée le contrôleur avec les timers
- * 3. new Affichage()       → crée la vue
- * 4. setAffichage()        → lie vue ↔ contrôleur
- * 5. cards.show()          → bascule l'écran
- * 6. demarrer()            → démarre les timers
+ * Séquence de lancement nous avons:
+ * 1. new Partie()         
+ * 2. new GameController()  
+ * 3. new Affichage()       
+ * 4. setAffichage()        
+ * 5. cards.show()          
+ * 6. demarrer()           
  */
 public class Test {
 
@@ -35,7 +34,7 @@ public class Test {
     public Test() {
         fenetre = new JFrame("FreeFight");
         fenetre.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        fenetre.setResizable(false);
+        fenetre.setResizable(true);
 
         // CardLayout : permet de swapper les panels sans recréer la fenêtre
         cards = new CardLayout();
@@ -78,7 +77,6 @@ public class Test {
     }
 
     public static void main(String[] args) {
-        // Lancement sur l'Event Dispatch Thread — bonne pratique Swing
         SwingUtilities.invokeLater(Test::new);
     }
 }

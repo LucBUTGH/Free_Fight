@@ -39,6 +39,10 @@ public class Affichage extends JPanel {
     private final Image sorcierImg;
     private final Image pekkaImg;
 
+    // Message affiché quand le stock d'un type de troupe est épuisé
+    private String messageStock = null;
+    private int ticksMessage    = 0;          // compteur pour faire disparaître le message
+    private static final int DUREE_MESSAGE = 60; // ticks d'affichage (~2.4 secondes)
 
     /**
      * Crée la vue principale du jeu.
@@ -83,6 +87,17 @@ public class Affichage extends JPanel {
     public void setClickInfo(int x, int y, List<Defense> enPortee) {
         this.clickPoint       = new Point(x, y);
         this.defensesEnPortee = enPortee;
+    }
+    
+    /**
+     * Affiche un message de stock vide à l'écran pendant quelques secondes.
+     * Appelé par le contrôleur quand le stock d'un type est épuisé.
+     *
+     * @param message  Le message à afficher
+     */
+    public void setMessageStock(String message) {
+        this.messageStock  = message;
+        this.ticksMessage  = 0;
     }
 
     public class MapPanel extends JPanel {
@@ -454,6 +469,33 @@ public class Affichage extends JPanel {
             g2.fillRoundRect(sx - 8, 8, sw + 16, 32, 10, 10);
             g2.setColor(new Color(255, 215, 0));
             g2.drawString(scoreStr, sx, 30);
+            
+             // Message de stock épuisé — affiché pendant DUREE_MESSAGE ticks puis effacé
+            if (messageStock != null) {
+                ticksMessage++;
+
+                float ratio   = 1f - (float) ticksMessage / DUREE_MESSAGE;
+                int   alpha   = (int) (255 * ratio);
+
+                g2.setFont(new Font("SansSerif", Font.BOLD, 16));
+                FontMetrics fmMsg = g2.getFontMetrics();
+                int mw = fmMsg.stringWidth(messageStock) + 24;
+                int mx = getWidth() / 2 - mw / 2;
+
+                // Fond rouge semi-transparent
+                g2.setColor(new Color(180, 0, 0, Math.min(alpha, 200)));
+                g2.fillRoundRect(mx, getHeight() - 130, mw, 28, 10, 10);
+
+                // Texte blanc
+                g2.setColor(new Color(255, 255, 255, alpha));
+                g2.drawString(messageStock, mx + 12, getHeight() - 111);
+
+                // Efface le message quand la durée est écoulée
+                if (ticksMessage >= DUREE_MESSAGE) {
+                    messageStock = null;
+                }
+            }
+            
         }
 
 

@@ -180,14 +180,14 @@ public abstract class Troupe {
      * @return                 Le bâtiment à attaquer, ou null si tout est détruit
      */
     public Batiment choisirCible(List<? extends Batiment> defenses,
-                                 Batiment chateauDeClan,
+                                 Batiment chateau,
                                  List<? extends Batiment> autresBatiments) {
         // 1. Priorité aux défenses
         Batiment cible = trouverPlusProche(defenses);
 
         // 2. Hôtel de ville si aucune défense
-        if (cible == null && chateauDeClan != null && !chateauDeClan.estDetruit()) {
-            cible = chateauDeClan;
+        if (cible == null && chateau != null && !chateau.estDetruit()) {
+            cible = chateau;
         }
 
         // 3. Autres bâtiments en dernier recours

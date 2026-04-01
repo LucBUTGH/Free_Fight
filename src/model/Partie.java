@@ -58,6 +58,7 @@ public class Partie {
         troupes         = new ArrayList<>();
         defenses        = new ArrayList<>();
         autresBatiments = new ArrayList<>();
+        
 
         secondesRestantes = 120; // 2 minutes de jeu
         score             = 0;
