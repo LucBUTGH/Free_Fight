@@ -3,37 +3,46 @@ package view;
 import java.awt.*;
 import javax.swing.*;
 
-import test.Test;
-
+/**
+ * Écran de démarrage du jeu.
+ *
+ * Reçoit un simple Runnable au lieu de dépendre de la classe Main,
+ * ce qui découple complètement la vue du point d'entrée.
+ * Le bouton "Start Game" appelle onStart.run() → lancerJeu() dans Main.
+ */
 public class StartPanel extends JPanel {
-    private final JButton startButton;
-    private final JLabel titleLabel;
-    
+
     private static final long serialVersionUID = 1L;
 
-    public StartPanel(Test t) {
+    /**
+     * Crée l'écran de démarrage.
+     *
+     * @param onStart  Action exécutée quand le joueur clique sur "Start Game"
+     */
+    public StartPanel(Runnable onStart) {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
         // Taille de la fenêtre de démarrage
         setPreferredSize(new Dimension(600, 400));
 
-        titleLabel = new JLabel("FreeFight", SwingConstants.CENTER);
+        // Titre centré
+        JLabel titleLabel = new JLabel("FreeFight", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 36));
         add(titleLabel, BorderLayout.CENTER);
 
-        startButton = new JButton("Start Game");
+        // Bouton de démarrage
+        JButton startButton = new JButton("Start Game");
         startButton.setFont(new Font("Arial", Font.PLAIN, 24));
 
+        // Au clic → déclenche lancerJeu() dans Main
+        startButton.addActionListener(e -> onStart.run());
+
+        // Panneau du bas avec marge autour du bouton
         JPanel bottom = new JPanel();
         bottom.setBackground(Color.WHITE);
-
-        // Ajouter une marge autour du bouton
         bottom.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-
         bottom.add(startButton);
         add(bottom, BorderLayout.SOUTH);
-
-        startButton.addActionListener(e -> t.lancerJeu());
     }
 }

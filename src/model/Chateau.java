@@ -32,18 +32,24 @@ public class Chateau extends Defense {
     public List<Troupe> spawnDefense() {
     	// Liste qui contiendra les troupes ennemies 
         List<Troupe> nouvelles = new ArrayList<>();
+
+        // Création des troupes défensives autour du château
         
         // Génération des troupes autour du chateau
         Barbare b1 = new Barbare(getX() + 30, getY());
-        Pekka b2 = new Pekka(getX() - 30, getY());
-        Sorcier b3 = new Sorcier(getX() + 30, getY());
-        
-        // Définition du camp
+        Pekka   b2 = new Pekka(getX() - 30,   getY());
+        Sorcier b3 = new Sorcier(getX(),       getY() + 30);
+
+        // Camp ENNEMI : ces troupes attaqueront les troupes du joueur
         b1.setCamp(Camp.ENNEMI);
         b2.setCamp(Camp.ENNEMI);
         b3.setCamp(Camp.ENNEMI);
-        
-        // Ajout à la liste
+
+        // Les troupes ennemies sont directement déployées sur la carte
+        b1.deployer(b1.getX(), b1.getY());
+        b2.deployer(b2.getX(), b2.getY());
+        b3.deployer(b3.getX(), b3.getY());
+
         nouvelles.add(b1);
         nouvelles.add(b2);
         nouvelles.add(b3);
@@ -51,18 +57,10 @@ public class Chateau extends Defense {
         // Retourne la liste des troupes générées 
         return nouvelles;
     }
-    
-    // indique si le chateau a déjà généré des troupes et retourne oui ou non 
-    public boolean hasSpawn() {
-        return aSpawn;
-    }
-    
-    /* Permet de modifier l'état du spawn 
-     * @param value true → le château a spawn
-     *              false → il peut encore spawn
-     */
-    public void setSpawn(boolean value) {
-        this.aSpawn = value;
-    }
-    
+
+    /** Retourne vrai si les troupes défensives ont déjà été spawned. */
+    public boolean hasSpawn() { return aSpawn; }
+
+    /** Marque le spawn comme effectué pour ne pas le déclencher deux fois. */
+    public void setSpawn(boolean value) { this.aSpawn = value; }
 }
