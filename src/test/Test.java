@@ -42,7 +42,7 @@ public class Test {
         fenetre.setVisible(false);
         fenetre.remove(startPanel);
 
-        ameliorationPanel = new AmeliorationPanel(this);
+        ameliorationPanel = new AmeliorationPanel(this::demarrerCombat);
         fenetre.add(ameliorationPanel);
 
         fenetre.pack();

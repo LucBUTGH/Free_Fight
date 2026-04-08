@@ -1,8 +1,10 @@
 package Main;
 
 import controller.GameController;
+import model.Ameliorations;
 import model.Partie;
 import view.Affichage;
+import view.AmeliorationPanel;
 import view.StartPanel;
 
 import javax.swing.*;
@@ -23,9 +25,10 @@ import java.awt.*;
  */
 public class Test {
 
-    // Identifiants des deux écrans dans le CardLayout
-    private static final String CARTE_START = "start";
-    private static final String CARTE_JEU   = "jeu";
+    // Identifiants des écrans dans le CardLayout
+    private static final String CARTE_START  = "start";
+    private static final String CARTE_AMELIO = "amelio";
+    private static final String CARTE_JEU    = "jeu";
 
     private final JFrame     fenetre;
     private final CardLayout cards;
@@ -50,24 +53,35 @@ public class Test {
     }
 
     /**
-     * Lance la partie en construisant et reliant les 3 couches MVC.
+     * Affiche le panneau d'amélioration des troupes.
      * Appelé quand le joueur clique sur "Start Game".
      */
     private void lancerJeu() {
+        AmeliorationPanel amelioPanel = new AmeliorationPanel(this::demarrerCombat);
+        root.add(amelioPanel, CARTE_AMELIO);
+        cards.show(root, CARTE_AMELIO);
+        fenetre.pack();
+    }
 
-        // 1. Modèle : tout l'état du jeu
-        Partie partie = new Partie();
+    /**
+     * Lance la partie avec les niveaux d'amélioration choisis.
+     * Appelé quand le joueur clique sur "Lancer la bataille".
+     */
+    private void demarrerCombat(Ameliorations ameliorations) {
 
-        // 2. Contrôleur : timers + interprétation des clics
+        // 1. Modèle
+        Partie partie = new Partie(ameliorations);
+
+        // 2. Contrôleur
         GameController controller = new GameController(partie);
 
-        // 3. Vue : dessin uniquement
+        // 3. Vue
         Affichage affichage = new Affichage(partie, controller);
 
-        // 4. Lier la vue au contrôleur (installe le MouseListener)
+        // 4. Lier vue et contrôleur
         controller.setAffichage(affichage);
 
-        // 5. Basculer sur l'écran de jeu sans recréer la fenêtre
+        // 5. Basculer sur l'écran de jeu
         root.add(affichage, CARTE_JEU);
         cards.show(root, CARTE_JEU);
         fenetre.pack();

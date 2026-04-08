@@ -49,12 +49,23 @@ public class Partie {
     // Augmente quand un bâtiment ennemi est détruit
     private int score;
 
+    // Niveaux d'amélioration des troupes du joueur
+    private Ameliorations ameliorations;
+
 
     /**
      * Initialise une nouvelle partie avec le village ennemi complet
-     * et les stocks de troupes du joueur.
+     * et les stocks de troupes du joueur (niveaux par défaut).
      */
     public Partie() {
+        this(new Ameliorations());
+    }
+
+    /**
+     * Initialise une nouvelle partie avec les niveaux d'amélioration choisis.
+     */
+    public Partie(Ameliorations ameliorations) {
+        this.ameliorations = ameliorations;
         troupes         = new ArrayList<>();
         defenses        = new ArrayList<>();
         autresBatiments = new ArrayList<>();
@@ -204,17 +215,17 @@ public class Partie {
             switch (type) {
                 case "Barbare":
                     if (stockBarbare <= 0) break;
-                    t = new Barbare(x + i * 15, y);
+                    t = new Barbare(x + i * 15, y, ameliorations.getNiveauBarbare());
                     stockBarbare--;
                     break;
                 case "Sorcier":
                     if (stockSorcier <= 0) break;
-                    t = new Sorcier(x + i * 15, y);
+                    t = new Sorcier(x + i * 15, y, ameliorations.getNiveauSorcier());
                     stockSorcier--;
                     break;
                 case "Pekka":
                     if (stockPekka <= 0) break;
-                    t = new Pekka(x + i * 15, y);
+                    t = new Pekka(x + i * 15, y, ameliorations.getNiveauPekka());
                     stockPekka--;
                     break;
             }

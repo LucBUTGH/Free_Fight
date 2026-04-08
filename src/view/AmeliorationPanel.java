@@ -3,11 +3,11 @@ package view;
 import java.awt.*;
 import javax.swing.*;
 
+import java.util.function.Consumer;
 import model.Ameliorations;
 import model.Barbare;
 import model.Pekka;
 import model.Sorcier;
-import test.Test;
 
 // Panneau qui s'affiche entre le menu de démarrage et la partie.
 // Le joueur y dépense l'or reçu en début de partie pour améliorer ses troupes.
@@ -33,7 +33,7 @@ public class AmeliorationPanel extends JPanel {
     // - en haut : titre + or disponible
     // - au centre : une ligne par troupe avec ses stats et un bouton d'amélioration
     // - en bas : un bouton pour lancer la bataille une fois les choix faits
-    public AmeliorationPanel(Test t) {
+    public AmeliorationPanel(Consumer<Ameliorations> onLancer) {
         this.ameliorations = new Ameliorations();
 
         setLayout(new BorderLayout());
@@ -105,7 +105,7 @@ public class AmeliorationPanel extends JPanel {
         btnLancer.setBackground(new Color(180, 30, 30));
         btnLancer.setForeground(Color.WHITE);
         btnLancer.setFocusPainted(false);
-        btnLancer.addActionListener(e -> t.demarrerCombat(ameliorations));
+        btnLancer.addActionListener(e -> onLancer.accept(ameliorations));
 
         bas.add(btnLancer);
         add(bas, BorderLayout.SOUTH);
