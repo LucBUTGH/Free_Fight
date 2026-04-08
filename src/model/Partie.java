@@ -147,7 +147,7 @@ public class Partie {
             d.agir(troupes);
         }
         // Le château tire aussi comme une défense normale
-        chateau.agir(troupes);
+        //chateau.agir(troupes);
 
         // aEteComptee() évite de scorer plusieurs fois le même bâtiment
         for (Defense d : defenses) {
