@@ -7,8 +7,18 @@ public class Pekka extends Troupe {
     private int targetY = 0;
 	
 	// Constructeur de Pekka
+    // Stats de base (niveau 1) : 200 PV, 60 dégâts, vitesse 1.
+    // Chaque niveau ajoute : +50 PV, +15 dégâts, et +1 vitesse tous les 2 niveaux.
+    public Pekka(int x, int y, int niveau) {
+        super(x, y,
+                200 + 50 * (niveau - 1),
+                60 + 15 * (niveau - 1),
+                1 + (niveau - 1) / 2,
+                niveau);
+    }
+
     public Pekka(int x, int y) {
-        super(x, y, 200, 60, 1);
+        this(x, y, 1);
     }
 
     // Définir une destination

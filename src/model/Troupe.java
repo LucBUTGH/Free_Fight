@@ -10,14 +10,16 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
     protected int health;   // points de vie de la troupe
     protected int damage;   // dégâts que la troupe inflige
     protected int speed;    // vitesse de déplacement de la troupe
+    protected int niveau;   // niveau d'amélioration de la troupe (1 = base)
     protected Batiment cible; // batiment cibler
 
-    public Troupe(int x, int y, int health, int damage, int speed) {
+    public Troupe(int x, int y, int health, int damage, int speed, int niveau) {
         this.x = x;
         this.y = y;
         this.health = health;
         this.damage = damage;
         this.speed = speed;
+        this.niveau = niveau;
     }
 
     // Méthode pour déplacer une troupe vers une position cible (targetX, targetY).
@@ -56,6 +58,9 @@ public abstract class Troupe { // car c'est une base commune à toutes les troup
     }
     public int getHealth() {
         return health;
+    }
+    public int getNiveau() {
+        return niveau;
     }
     
     

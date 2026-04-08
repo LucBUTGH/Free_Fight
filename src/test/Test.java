@@ -2,6 +2,7 @@ package test;
 
 import model.*;
 import view.Affichage;
+import view.AmeliorationPanel;
 import view.StartPanel;
 
 import javax.swing.JFrame;
@@ -10,8 +11,9 @@ public class Test {
 
     /* la fenêtre d'affichage : menu au début puis fenêtre de jeu */
     private JFrame fenetre;
-    private StartPanel startPanel; // le panneau de départ
-    private Affichage affichage;   // la vue principale
+    private StartPanel startPanel;             // le panneau de départ
+    private AmeliorationPanel ameliorationPanel; // le panneau d'amélioration
+    private Affichage affichage;               // la vue principale
 
     /* On va créer juste une instance */
     public Test() {
@@ -31,21 +33,40 @@ public class Test {
         new Test();
     }
 
+    // Étape 1 : depuis le menu de démarrage, on ouvre le panneau d'amélioration
+    // pour que le joueur dépense son or avant le combat.
     public void lancerJeu() {
+        fenetre.setTitle("FreeFight – Améliorations");
 
+        fenetre.setVisible(false);
+        fenetre.remove(startPanel);
+
+        ameliorationPanel = new AmeliorationPanel(this);
+        fenetre.add(ameliorationPanel);
+
+        fenetre.pack();
+        fenetre.setLocationRelativeTo(null);
+        fenetre.setVisible(true);
+    }
+
+    // Étape 2 : une fois les améliorations choisies, on lance la partie
+    // en créant les troupes avec les niveaux sélectionnés par le joueur.
+    public void demarrerCombat(Ameliorations ameliorations) {
         fenetre.setTitle("FreeFight – Test Portée Défenses");
 
         // Création de la partie
         Partie partie = new Partie();
 
-        // Création des troupes dans la partie
-        partie.ajouterTroupe(new Barbare(50, 500));
-        partie.ajouterTroupe(new Sorcier(120, 500));
-        partie.ajouterTroupe(new Pekka(190, 500));
+        // Création des troupes dans la partie (avec leur niveau d'amélioration)
+        partie.ajouterTroupe(new Barbare(50,  500, ameliorations.getNiveauBarbare()));
+        partie.ajouterTroupe(new Sorcier(120, 500, ameliorations.getNiveauSorcier()));
+        partie.ajouterTroupe(new Pekka  (190, 500, ameliorations.getNiveauPekka()));
 
         // Remplacer le contenu de la fenêtre
         fenetre.setVisible(false);
-        fenetre.remove(startPanel);
+        if (ameliorationPanel != null) {
+            fenetre.remove(ameliorationPanel);
+        }
 
         // On passe la partie à l'affichage
         affichage = new Affichage(partie);
@@ -54,7 +75,7 @@ public class Test {
         // lire l'état du jeu (troupes, défenses, hôtel de ville, chrono)
         // sans stocker elle-même ces données.
         fenetre.add(affichage);
-        
+
         fenetre.pack();
         fenetre.setLocationRelativeTo(null);
         fenetre.setVisible(true);

@@ -495,6 +495,9 @@ public class Affichage extends JPanel {
          index++;
          g.setColor(Color.WHITE);
          g.drawString("PV:" + t.getHealth(), x, y + 75);
+         // Affiche le niveau d'amélioration de la troupe
+         g.setColor(new Color(255, 215, 0));
+         g.drawString("Niv." + t.getNiveau(), x, y - 2);
      }
  }
 }
