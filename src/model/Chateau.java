@@ -17,8 +17,8 @@ public class Chateau extends Defense {
     * @param x Position en X sur la carte
     * @param y Position en Y sur la carte
     */
-    public Chateau(String nom, int pv, int portee, int x, int y) {
-        super(nom, 60, portee, x, y);
+    public Chateau(String nom, int pv, int portee, int x, int y, int cadenceTir, int tickDepuisTir) {
+        super(nom, 60, portee, x, y, cadenceTir, tickDepuisTir);
     }
 
     /*
