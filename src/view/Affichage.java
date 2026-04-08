@@ -134,12 +134,7 @@ public class Affichage extends JPanel {
             // Troupes et avatars par-dessus tout
             dessinerTroupesSurCarte(g);
             dessinerAvatarsBarre(g);
-        }
-
-
-        /** Dessine une grille verte semi-transparente sur le terrain. */
-            dessinerTroupes(g);
-            drawAvatars(g);
+            dessinerResultat(g2);
 
             // Écran de fin par-dessus tout
             if (partie.estTerminee()) {
@@ -161,27 +156,6 @@ public class Affichage extends JPanel {
                 }
             }
             return null;
-        }
-
-        // Méthode qui dessine toutes les troupes sur la carte.
-        // Parcourir la liste des troupes et afficher l'image correspondant au type
-        // de troupe (Barbare, Sorcier, Pekka) à sa position.
-        private void dessinerTroupes(Graphics g) {
-            for (Troupe t : partie.getTroupes()) {
-                if (t instanceof Barbare) {
-                    g.drawImage(barbareImg, t.getX(), t.getY(), 40, 40, Affichage.this);
-                } else if (t instanceof Sorcier) {
-                    g.drawImage(sorcierImg, t.getX(), t.getY(), 40, 40, Affichage.this);
-                } else if (t instanceof Pekka) {
-                    g.drawImage(pekkaImg, t.getX(), t.getY(), 40, 40, Affichage.this);
-                }
-
-                // Met en évidence la troupe sélectionnée
-                if (t == troupeSelectionnee) {
-                    g.setColor(Color.YELLOW);
-                    g.drawRect(t.getX(), t.getY(), 40, 40);
-                }
-            }
         }
 
         // Dessine une grille sur le terrain
@@ -652,9 +626,6 @@ public class Affichage extends JPanel {
         }
 
         public void dessinerResultat(Graphics2D g2) {
-                g2.drawString(msg, getWidth() / 2 - g2.getFontMetrics().stringWidth(msg) / 2, 55);
-            }
-
             // Score en haut à droite
             g2.setFont(new Font("SansSerif", Font.BOLD, 18));
             String scoreStr = "Score : " + partie.getScore();
