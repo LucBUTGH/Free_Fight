@@ -1,42 +1,56 @@
 package model;
 
+/**
+ * Troupe lourde contrôlable manuellement par le joueur.
+ *
+ * Le Pekka peut recevoir une destination de déplacement libre via clic,
+ * avant de reprendre son comportement automatique.
+ *
+ * Statistiques : 200 PV, 60 dégâts, vitesse 1.
+ */
 public class Pekka extends Troupe {
 
-    // Attributs de destination (propres au Pekka)
+    // Destination de déplacement manuel définie par le joueur.
+    // Vaut 0,0 quand aucune destination n'est active.
     private int targetX = 0;
     private int targetY = 0;
-	
-	// Constructeur de Pekka
+
     public Pekka(int x, int y) {
         super(x, y, 200, 60, 1);
     }
 
-    // Définir une destination
+    /**
+     * Définit une destination de déplacement libre.
+     * Annule la cible bâtiment le temps d'atteindre la destination.
+     *
+     * @param x  Coordonnée X de destination
+     * @param y  Coordonnée Y de destination
+     */
     public void setDestination(int x, int y) {
         this.targetX = x;
         this.targetY = y;
-
-        // Enlever la cible automatique
-        this.setCible(null);
+        this.setCible(null); // annule la cible bâtiment pendant le déplacement
     }
 
-    // Override du comportement
+    /**
+     * Comportement du Pekka par tick.
+     *
+     * Si une destination manuelle est définie → se déplacer vers elle
+     * Sinon → comportement standard (attaque bâtiment ou troupe ennemie)
+     */
     @Override
     public void agirManuellement() {
-    	// Si une destination est définie 
-    	if (targetX != 0 && targetY != 0) {
-    		// Si on est tjr pas arrivés à une cible, on bouge
-    		if(!isArrived(targetX, targetY)){
-    			moveTo(targetX, targetY);
-    			return; 
-    		}else {
-    			// Arrivée on reset la destination
-    			targetX = 0;
-    			targetY = 0;
-    		}
-    	}
-
-        // Ensuite comportement normal (Attaquer les cibles)
+        if (targetX != 0 && targetY != 0) {
+            if (!isArrived(targetX, targetY)) {
+                moveTo(targetX, targetY);
+                return;
+            } else {
+                // Arrivé à destination → on efface la destination
+                targetX = 0;
+                targetY = 0;
+            }
+        }
+        // Comportement normal hérité
         super.agirManuellement();
     }
 }

@@ -1,10 +1,14 @@
 package model;
 
-
+/**
+ * Troupe de base : rapide mais peu résistante.
+ * Pas de comportement spécial — hérite tout de Troupe.
+ *
+ * Statistiques : 100 PV, 20 dégâts, vitesse 2.
+ */
 public class Barbare extends Troupe {
 
     public Barbare(int x, int y) {
-        super(x, y, 100, 20, 2); // les barbares ont 100 points de vie, infligent 20 points de dégâts et ont une vitesse de 5
+        super(x, y, 100, 20, 2);
     }
-
 }
