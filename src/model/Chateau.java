@@ -3,52 +3,39 @@ package model;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Représente le Château de Clan du village ennemi.
- *
- * Le Château de Clan est une défense spéciale : en plus de tirer sur les
- * troupes ennemies comme une défense normale, il spawne des troupes
- * défensives (camp ENNEMI) quand une troupe du joueur entre dans sa portée.
- *
- * Ce spawn ne se produit qu'une seule fois par partie.
- *
- * Hérite de Defense : il a donc une portée, des dégâts, une cadence de tir.
- */
+/* Classe du chateau de clan : défense particulière qui sort des 
+troupes ennemies lorsque nos troupes sont à portée du chateau */
+
 public class Chateau extends Defense {
-
-    // Indique si les troupes défensives ont déjà été spawned.
-    // Le spawn ne se déclenche qu'une seule fois par partie.
+	// indiquer si le chateau a déjà généré des troupes
     private boolean aSpawn = false;
-
-
-    /**
-     * Crée un Château de Clan.
-     *
-     * @param nom         Nom affiché
-     * @param pv          Points de vie
-     * @param portee      Rayon de détection et de tir
-     * @param degats      Dégâts infligés par tir
-     * @param cadenceTir  Ticks entre chaque tir
-     * @param x           Position X
-     * @param y           Position Y
-     */
-    public Chateau(String nom, int pv, int portee, int degats, int cadenceTir, int x, int y) {
-        super(nom, pv, portee, degats, cadenceTir, x, y);
+    
+    /* Constructeur du chateau 
+    * @param nom Nom du bâtiment
+    * @param pv Points de vie (non utilisé ici car fixé à 60 pour équitablité du combat)
+    * @param portee Rayon de détection des troupes ennemies
+    * @param x Position en X sur la carte
+    * @param y Position en Y sur la carte
+    */
+    public Chateau(String nom, int pv, int portee, int x, int y) {
+        super(nom, 60, portee, x, y);
     }
 
-
-    /**
-     * Crée et retourne les troupes défensives à spawner autour du château.
-     *
-     * Les troupes sont assignées au camp ENNEMI pour qu'elles attaquent
-     * les troupes du joueur. Elles sont immédiatement marquées comme déployées.
-     *
-     * @return Liste des nouvelles troupes défensives
+    /*
+     * Génère les troupes de défense du château.
+     * 
+     * Les troupes apparaissent autour du château avec un léger décalage
+     * pour éviter qu'elles ne soient superposées.
+     * 
+     * retourne Liste des nouvelles troupes générées
      */
     public List<Troupe> spawnDefense() {
+    	// Liste qui contiendra les troupes ennemies 
         List<Troupe> nouvelles = new ArrayList<>();
 
         // Création des troupes défensives autour du château
+        
+        // Génération des troupes autour du chateau
         Barbare b1 = new Barbare(getX() + 30, getY());
         Pekka   b2 = new Pekka(getX() - 30,   getY());
         Sorcier b3 = new Sorcier(getX(),       getY() + 30);
@@ -66,7 +53,8 @@ public class Chateau extends Defense {
         nouvelles.add(b1);
         nouvelles.add(b2);
         nouvelles.add(b3);
-
+        
+        // Retourne la liste des troupes générées 
         return nouvelles;
     }
 
