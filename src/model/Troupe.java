@@ -22,12 +22,12 @@ import static java.awt.geom.Point2D.distance;
  */
 public abstract class Troupe {
 
-
     protected int x;          // Position X actuelle sur la carte
     protected int y;          // Position Y actuelle sur la carte
     protected int health;     // Points de vie actuels
     protected int damage;     // Dégâts infligés à chaque attaque
     protected int speed;      // Vitesse de déplacement en pixels par tick
+    protected int niveau;     // Niveau d'amélioration (1 = base)
 
     // Bâtiment actuellement ciblé par la troupe
     protected Batiment cible;
@@ -40,16 +40,13 @@ public abstract class Troupe {
     // Empêche les troupes du même camp de s'attaquer entre elles
     private Camp camp;
 
-
     // Mémorisé à la création pour calculer le ratio de la barre de vie.
     // final car les PV max ne changent jamais pendant la partie.
     private final int healthMax;
 
-
     // Tant que deployee est false, la troupe n'est pas dessinée sur la carte
     // et n'est pas mise à jour dans la boucle de jeu.
     private boolean deployee = false;
-
 
     // Quand une troupe meurt, on affiche une croix rouge pendant DUREE_MORT
     // ticks avant de la supprimer de la liste.
@@ -57,25 +54,19 @@ public abstract class Troupe {
     private int ticksMort = 0;            // compteur de ticks depuis la mort
     private static final int DUREE_MORT = 8; // durée de l'animation en ticks
 
-
-    /**
-     * Initialise une troupe avec ses caractéristiques de base.
-     * Par défaut, toute troupe est du camp JOUEUR.
-     *
-     * @param x       Position X de départ
-     * @param y       Position Y de départ
-     * @param health  Points de vie initiaux (aussi utilisés comme maximum)
-     * @param damage  Dégâts infligés par attaque
-     * @param speed   Vitesse de déplacement (pixels par tick)
-     */
-    public Troupe(int x, int y, int health, int damage, int speed) {
+    public Troupe(int x, int y, int health, int damage, int speed, int niveau) {
         this.x         = x;
         this.y         = y;
         this.health    = health;
         this.healthMax = health;
         this.damage    = damage;
         this.speed     = speed;
-        this.camp      = Camp.JOUEUR; // par défaut toute troupe est côté joueur
+        this.niveau    = niveau;
+        this.camp      = Camp.JOUEUR;
+    }
+
+    public Troupe(int x, int y, int health, int damage, int speed) {
+        this(x, y, health, damage, speed, 1);
     }
 
 
@@ -109,10 +100,10 @@ public abstract class Troupe {
         return x == targetX && y == targetY;
     }
 
-
     public int getX()               { return x;            }
     public int getY()               { return y;            }
     public int getHealth()          { return health;       }
+    public int getNiveau()          { return niveau;       }
     public int getHealthMax()       { return healthMax;    }
     public boolean isDeployee()     { return deployee;     }
     public boolean isMortVisuelle() { return mortVisuelle; }
