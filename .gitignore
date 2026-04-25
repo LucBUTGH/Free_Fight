@@ -1,6 +1,12 @@
 # Compiled class files
-
 *.class
+
+# Sauvegarde joueur (données locales)
+sauvegarde.dat
+src/sauvegarde.dat
+
+# Claude Code
+.claude/
 
 # Log files
 
