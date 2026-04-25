@@ -53,49 +53,88 @@ public class Partie {
     private Ameliorations ameliorations;
 
 
-    /**
-     * Initialise une nouvelle partie avec le village ennemi complet
-     * et les stocks de troupes du joueur (niveaux par défaut).
-     */
     public Partie() {
-        this(new Ameliorations());
+        this(new Ameliorations(), 1);
     }
 
-    /**
-     * Initialise une nouvelle partie avec les niveaux d'amélioration choisis.
-     */
     public Partie(Ameliorations ameliorations) {
+        this(ameliorations, 1);
+    }
+
+    public Partie(Ameliorations ameliorations, int niveau) {
         this.ameliorations = ameliorations;
         troupes         = new ArrayList<>();
         defenses        = new ArrayList<>();
         autresBatiments = new ArrayList<>();
-        
+        score           = 0;
 
-        secondesRestantes = 120; // 2 minutes de jeu
-        score             = 0;
+        switch (niveau) {
+            case 2:  configurerNiveau2(); break;
+            case 3:  configurerNiveau3(); break;
+            case 4:  configurerNiveau4(); break;
+            default: configurerNiveau1(); break;
+        }
 
-        // Bâtiment principal — 500 points si détruit
+        stockBarbare = 6;
+        stockSorcier = 3;
+        stockPekka   = (niveau == 4) ? 2 : 3;
+    }
+
+    private void configurerNiveau1() {
+        secondesRestantes = 120;
         hotelDeVille = new Batiment("Hôtel de Ville", 1500, 375, 290);
-
-        // Château de Clan — spawne des défenseurs quand attaqué
-        // Chateau(nom, pv, portee, degats, cadenceTir, x, y)
         chateau = new Chateau("Château de Clan", 500, 150, 20, 30, 600, 300);
-
-        // Défenses du village
-        // Defense(nom, pv, portee, degats, cadenceTir, x, y)
         defenses.add(new Defense("Canon",       200, 150, 15, 30, 200, 200));
         defenses.add(new Defense("Tour Archer", 100, 220,  8, 20, 500, 280));
         defenses.add(new Defense("Mortier",     300, 180, 25, 40, 360, 430));
-
-        // Bâtiments normaux
         autresBatiments.add(new Batiment("Cabane en Or", 500, 600, 150));
         autresBatiments.add(new Batiment("Extracteur",   300, 700, 300));
         autresBatiments.add(new Batiment("Laboratoire",  800, 250, 450));
+    }
 
-        // Stocks de troupes disponibles pour le joueur
-        stockBarbare = 6;
-        stockSorcier = 3;
-        stockPekka   = 3;
+    // Niveau 2 — Intermédiaire : HdV renforcé, 4 défenses, château plus fort
+    private void configurerNiveau2() {
+        secondesRestantes = 120;
+        hotelDeVille = new Batiment("Hôtel de Ville", 2000, 375, 290);
+        chateau = new Chateau("Château de Clan", 700, 160, 30, 25, 600, 300);
+        defenses.add(new Defense("Canon",       250, 155, 18, 28, 200, 200));
+        defenses.add(new Defense("Canon",       250, 155, 18, 28, 420, 150));
+        defenses.add(new Defense("Tour Archer", 150, 230, 10, 18, 500, 280));
+        defenses.add(new Defense("Mortier",     350, 190, 30, 38, 360, 430));
+        autresBatiments.add(new Batiment("Cabane en Or",  600, 600, 150));
+        autresBatiments.add(new Batiment("Extracteur",    400, 700, 300));
+        autresBatiments.add(new Batiment("Laboratoire",  1000, 250, 450));
+    }
+
+    // Niveau 3 — Difficile : 5 défenses, château avec grande portée
+    private void configurerNiveau3() {
+        secondesRestantes = 120;
+        hotelDeVille = new Batiment("Hôtel de Ville", 2500, 375, 290);
+        chateau = new Chateau("Château de Clan", 1000, 200, 40, 22, 600, 300);
+        defenses.add(new Defense("Canon",        300, 160, 22, 25, 200, 200));
+        defenses.add(new Defense("Canon",        300, 160, 22, 25, 420, 150));
+        defenses.add(new Defense("Tour Archer",  200, 240, 12, 16, 500, 280));
+        defenses.add(new Defense("Tour Archer",  200, 240, 12, 16, 650, 400));
+        defenses.add(new Defense("Mortier",      400, 200, 35, 35, 360, 430));
+        autresBatiments.add(new Batiment("Cabane en Or",   700, 600, 150));
+        autresBatiments.add(new Batiment("Extracteur",     500, 700, 300));
+        autresBatiments.add(new Batiment("Laboratoire",   1200, 250, 450));
+    }
+
+    // Niveau 4 — Expert : 6 défenses, temps réduit (1m45), 2 Pekka seulement
+    private void configurerNiveau4() {
+        secondesRestantes = 105;
+        hotelDeVille = new Batiment("Hôtel de Ville", 3000, 375, 290);
+        chateau = new Chateau("Château de Clan", 1500, 220, 50, 20, 600, 300);
+        defenses.add(new Defense("Canon",        350, 165, 25, 22, 200, 200));
+        defenses.add(new Defense("Canon",        350, 165, 25, 22, 420, 150));
+        defenses.add(new Defense("Tour Archer",  250, 250, 15, 15, 500, 280));
+        defenses.add(new Defense("Tour Archer",  250, 250, 15, 15, 650, 400));
+        defenses.add(new Defense("Mortier",      500, 210, 40, 30, 360, 430));
+        defenses.add(new Defense("Inferno",      400, 180, 35, 18, 300, 350));
+        autresBatiments.add(new Batiment("Cabane en Or",   800, 600, 150));
+        autresBatiments.add(new Batiment("Extracteur",     600, 700, 300));
+        autresBatiments.add(new Batiment("Laboratoire",   1500, 250, 450));
     }
 
     /**

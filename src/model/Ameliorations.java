@@ -20,7 +20,15 @@ public class Ameliorations {
     private int niveauPekka;
 
     public Ameliorations() {
-        this.or = OR_DEPART;
+        this(OR_DEPART);
+    }
+
+    /**
+     * Crée les améliorations avec un montant d'or personnalisé.
+     * @param orInitial Quantité d'or de départ
+     */
+    public Ameliorations(int orInitial) {
+        this.or = orInitial;
         this.niveauBarbare = 1;
         this.niveauSorcier = 1;
         this.niveauPekka = 1;

@@ -57,14 +57,19 @@ public class Affichage extends JPanel {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(1280, 720));
 
-        // Chargement des images des troupes
-        barbareImg = new ImageIcon("res/Barbare.png").getImage();
-        sorcierImg = new ImageIcon("res/Sorcier.png").getImage();
-        pekkaImg   = new ImageIcon("res/Pekka.png").getImage();
+        barbareImg = chargerImage("res/Barbare.png");
+        sorcierImg = chargerImage("res/Sorcier.png");
+        pekkaImg   = chargerImage("res/Pekka.png");
 
-        // Création du panneau principal de la carte
         mapPanel = new MapPanel();
         add(mapPanel, BorderLayout.CENTER);
+    }
+
+    // Charge une image depuis le classpath (fonctionne quel que soit le répertoire de lancement)
+    private Image chargerImage(String chemin) {
+        java.net.URL url = getClass().getClassLoader().getResource(chemin);
+        if (url != null) return new ImageIcon(url).getImage();
+        return null;
     }
 
 

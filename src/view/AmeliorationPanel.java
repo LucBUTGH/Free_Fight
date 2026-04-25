@@ -33,8 +33,8 @@ public class AmeliorationPanel extends JPanel {
     // - en haut : titre + or disponible
     // - au centre : une ligne par troupe avec ses stats et un bouton d'amélioration
     // - en bas : un bouton pour lancer la bataille une fois les choix faits
-    public AmeliorationPanel(Consumer<Ameliorations> onLancer) {
-        this.ameliorations = new Ameliorations();
+    public AmeliorationPanel(Consumer<Ameliorations> onLancer, int orInitial) {
+        this.ameliorations = new Ameliorations(orInitial);
 
         setLayout(new BorderLayout());
         setBackground(new Color(30, 30, 45));

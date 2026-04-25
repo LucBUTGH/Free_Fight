@@ -45,27 +45,105 @@ public class GameController {
      *
      * @param partie  La partie à contrôler
      */
+    // Garde pour ne pas appeler notifierFinPartie() deux fois
+    private boolean finNotifiee = false;
+
     public GameController(Partie partie) {
         this.partie = partie;
 
-        // Boucle de jeu (40 ms)
-        // Fait avancer le jeu et redessine l'écran à chaque tick
         timerJeu = new Timer(40, e -> {
             partie.update();
             if (affichage != null) affichage.repaint();
+            // Victoire par destruction totale avant la fin du chrono
+            if (!finNotifiee && partie.estTerminee()) {
+                arreterTimers();
+                notifierFinPartie();
+            }
         });
 
-        // Chronomètre (1 tick/s)
-        // Décrémente le temps restant et arrête quand le temps est écoulé
         timerChrono = new Timer(1000, e -> {
             if (!partie.tempsEcoule()) {
                 partie.decrementerTemps();
                 if (affichage != null) affichage.repaint();
-            } else {
-                timerChrono.stop();
-                if (affichage != null) affichage.repaint();
+            } else if (!finNotifiee) {
+                arreterTimers();
+                notifierFinPartie();
             }
         });
+    }
+
+    private void arreterTimers() {
+        timerJeu.stop();
+        timerChrono.stop();
+        if (affichage != null) affichage.repaint();
+    }
+
+    /**
+     * Callback appelé quand la partie se termine (temps écoulé).
+     * Implémenté par Main pour afficher l'écran de fin.
+     */
+    private Runnable finPartieCallback;
+
+    /**
+     * Définit le callback de fin de partie.
+     * @param callback Runnable à exécuter quand la partie se termine
+     */
+    public void setFinPartieCallback(Runnable callback) {
+        this.finPartieCallback = callback;
+    }
+
+    /**
+     * Notifie la fin de la partie et appelle le callback si défini.
+     */
+    private void notifierFinPartie() {
+        finNotifiee = true;
+        if (finPartieCallback != null) {
+            finPartieCallback.run();
+        }
+    }
+
+    /**
+     * Retourne le nombre d'étoiles gagnées.
+     * @return Nombre d'étoiles (0 à 3)
+     */
+    public int getEtoiles() {
+        return partie.getEtoiles();
+    }
+
+    /**
+     * Retourne le score final.
+     * @return Score de la partie
+     */
+    public int getScore() {
+        return partie.getScore();
+    }
+
+    /**
+     * Retourne le temps restant en secondes.
+     * @return Secondes restantes
+     */
+    public int getTempsRestant() {
+        return partie.getSecondesRestantes();
+    }
+
+    /**
+     * Calcule l'or gagné pendant la partie.
+     * Base : 100 par étoile + bonus selon le score.
+     * @return Or gagné
+     */
+    public int getOrGagne() {
+        int etoiles = getEtoiles();
+        int score = getScore();
+        
+        // Base : 100 or par étoile
+        int or = etoiles * 100;
+        
+        // Bonus : 10 or par tranche de 500 points au-delà de 1000
+        if (score > 1000) {
+            or += (score - 1000) / 500 * 10;
+        }
+        
+        return or;
     }
 
 
