@@ -38,11 +38,9 @@ public class FinPanel extends JPanel {
 
         centre.add(Box.createVerticalStrut(10));
 
-        JLabel etoilesLabel = new JLabel(buildEtoiles(etoiles), SwingConstants.CENTER);
-        etoilesLabel.setFont(new Font("Arial", Font.BOLD, 48));
-        etoilesLabel.setForeground(new Color(255, 215, 0));
-        etoilesLabel.setAlignmentX(CENTER_ALIGNMENT);
-        centre.add(etoilesLabel);
+        JPanel etoilesPanel = creerPanneauEtoiles(etoiles, 44, 10);
+        etoilesPanel.setAlignmentX(CENTER_ALIGNMENT);
+        centre.add(etoilesPanel);
 
         centre.add(Box.createVerticalStrut(12));
 
@@ -112,11 +110,44 @@ public class FinPanel extends JPanel {
         return btn;
     }
 
-    private String buildEtoiles(int etoiles) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 3; i++) {
-            sb.append(i < etoiles ? "★" : "☆").append(" ");
-        }
-        return sb.toString().trim();
+    // Dessine 3 étoiles en Java2D — évite les problèmes de police avec ★/☆ sur Windows
+    private JPanel creerPanneauEtoiles(int etoiles, int taille, int espacement) {
+        int largeur = 3 * taille + 2 * espacement + 4;
+        JPanel p = new JPanel() {
+            @Override
+            protected void paintComponent(java.awt.Graphics g) {
+                super.paintComponent(g);
+                java.awt.Graphics2D g2 = (java.awt.Graphics2D) g;
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                                    java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                for (int i = 0; i < 3; i++) {
+                    int cx = i * (taille + espacement) + taille / 2 + 2;
+                    int cy = taille / 2 + 2;
+                    int[] xp = new int[10], yp = new int[10];
+                    double outer = taille / 2.0, inner = outer * 0.42;
+                    for (int j = 0; j < 10; j++) {
+                        double angle = Math.PI / 2 + j * Math.PI / 5;
+                        double r = (j % 2 == 0) ? outer : inner;
+                        xp[j] = cx + (int)(Math.cos(angle) * r);
+                        yp[j] = cy - (int)(Math.sin(angle) * r);
+                    }
+                    if (i < etoiles) {
+                        g2.setColor(new Color(255, 215, 0));
+                        g2.fillPolygon(xp, yp, 10);
+                        g2.setColor(new Color(200, 160, 0));
+                    } else {
+                        g2.setColor(new Color(70, 70, 70));
+                        g2.fillPolygon(xp, yp, 10);
+                        g2.setColor(new Color(120, 120, 120));
+                    }
+                    g2.setStroke(new java.awt.BasicStroke(2));
+                    g2.drawPolygon(xp, yp, 10);
+                }
+            }
+        };
+        p.setOpaque(false);
+        p.setPreferredSize(new Dimension(largeur, taille + 4));
+        p.setMaximumSize(new Dimension(largeur, taille + 4));
+        return p;
     }
 }

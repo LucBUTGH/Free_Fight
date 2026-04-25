@@ -410,6 +410,12 @@ public class Affichage extends JPanel {
             Graphics2D g2 = (Graphics2D) g;
             String typeSelectionne = controller.getTypeSelectionne();
 
+            // Or de combat — affiché en haut à gauche de la barre
+            int orCombat = partie.getOrCombat();
+            g2.setFont(new Font("SansSerif", Font.BOLD, 15));
+            g2.setColor(new Color(255, 215, 0));
+            g2.drawString("Or: " + orCombat, 10, getHeight() - 105);
+
             // Ordre des avatars : Pekka, Sorcier, Barbare
             Image[]  imgs   = {pekkaImg,  sorcierImg, barbareImg};
             String[] types  = {"Pekka",   "Sorcier",  "Barbare"};
@@ -417,6 +423,11 @@ public class Affichage extends JPanel {
                 partie.getStockPekka(),
                 partie.getStockSorcier(),
                 partie.getStockBarbare()
+            };
+            int[] prix = {
+                Partie.getPrixTroupe("Pekka"),
+                Partie.getPrixTroupe("Sorcier"),
+                Partie.getPrixTroupe("Barbare")
             };
 
             int avatarSize = 50, spacing = 80, startX = 20;
@@ -438,11 +449,26 @@ public class Affichage extends JPanel {
 
                 // Stock disponible — rouge si épuisé
                 g.setColor(stocks[i] > 0 ? Color.WHITE : new Color(180, 60, 60));
+                g.setFont(new Font("SansSerif", Font.BOLD, 12));
                 g.drawString("x" + stocks[i], x + avatarSize - 15, y + avatarSize - 5);
 
                 // Nom du type
                 g.setColor(Color.LIGHT_GRAY);
-                g.drawString(types[i], x, y + avatarSize + 15);
+                g.setFont(new Font("SansSerif", Font.PLAIN, 11));
+                g.drawString(types[i], x, y + avatarSize + 13);
+
+                // Bouton "+" pour acheter une troupe avec l'or de combat
+                int bx = x + avatarSize + 3;
+                int by = y;
+                boolean peutAcheter = orCombat >= prix[i];
+                g2.setColor(peutAcheter ? new Color(50, 180, 50) : new Color(80, 80, 80));
+                g2.fillRoundRect(bx, by, 22, 22, 6, 6);
+                g2.setColor(Color.WHITE);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+                g2.drawString("+", bx + 5, by + 16);
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 9));
+                g2.setColor(peutAcheter ? new Color(200, 255, 200) : new Color(140, 140, 140));
+                g2.drawString(prix[i] + "g", bx + 1, by + 32);
             }
         }
 

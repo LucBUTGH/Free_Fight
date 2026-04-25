@@ -86,12 +86,14 @@ public class Test {
         int temps    = controleurActuel.getTempsRestant();
         int orGagne  = controleurActuel.getOrGagne();
 
-        // Mise à jour de la progression
+        // L'Hôtel de Ville doit être détruit pour valider la victoire et débloquer
+        boolean vraiVictoire = controleurActuel.hotelDeVilleDetruit();
+
         sauvegarde.ajouterOr(orGagne);
-        boolean nouveauNiveau = etoiles > 0 && sauvegarde.debloquerNiveauSuivant(niveauActuel);
+        boolean nouveauNiveau = vraiVictoire && sauvegarde.debloquerNiveauSuivant(niveauActuel);
         sauvegarde.sauvegarder();
 
-        boolean peutAvancer = nouveauNiveau || (etoiles > 0 && niveauActuel < sauvegarde.getNiveauDebloque());
+        boolean peutAvancer = vraiVictoire && niveauActuel < sauvegarde.getNiveauDebloque();
 
         FinPanel finPanel = new FinPanel(
             score, etoiles, temps, orGagne,

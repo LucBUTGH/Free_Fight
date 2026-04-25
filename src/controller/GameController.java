@@ -132,18 +132,13 @@ public class GameController {
      * @return Or gagné
      */
     public int getOrGagne() {
-        int etoiles = getEtoiles();
-        int score = getScore();
-        
-        // Base : 100 or par étoile
-        int or = etoiles * 100;
-        
-        // Bonus : 10 or par tranche de 500 points au-delà de 1000
-        if (score > 1000) {
-            or += (score - 1000) / 500 * 10;
-        }
-        
-        return or;
+        // 30 or par étoile — progression lente, améliorations coûteuses
+        return getEtoiles() * 30;
+    }
+
+    // Vrai uniquement si l'Hôtel de Ville a été détruit (condition réelle de victoire)
+    public boolean hotelDeVilleDetruit() {
+        return partie.getHotelDeVille().estDetruit();
     }
 
 
@@ -187,6 +182,15 @@ public class GameController {
      * @param my  Coordonnée Y du clic
      */
     private void handleClick(int mx, int my) {
+
+        // 0. Clic sur le bouton "+" → acheter une troupe avec l'or de combat
+        String typeAchat = getAchatFromBar(mx, my);
+        if (typeAchat != null) {
+            boolean ok = partie.acheterTroupe(typeAchat);
+            if (!ok) affichage.setMessageStock("Pas assez d'or ! (" + Partie.getPrixTroupe(typeAchat) + " or)");
+            affichage.repaint();
+            return;
+        }
 
         // 1. Clic sur un avatar dans la barre → sélectionner le TYPE
         String type = getTypeFromBar(mx, my);
@@ -244,6 +248,20 @@ public class GameController {
         for (int i = 0; i < 3; i++) {
             int x = AVATAR_START_X + i * AVATAR_SPACING;
             if (mx >= x && mx <= x + AVATAR_SIZE && my >= barY && my <= barY + AVATAR_SIZE)
+                return noms[i];
+        }
+        return null;
+    }
+
+    // Bouton "+" placé à droite de chaque avatar (zone 22x22px)
+    private String getAchatFromBar(int mx, int my) {
+        int barY      = affichage.getMapPanel().getHeight() - 80;
+        String[] noms = {"Pekka", "Sorcier", "Barbare"};
+
+        for (int i = 0; i < 3; i++) {
+            int bx = AVATAR_START_X + i * AVATAR_SPACING + AVATAR_SIZE + 3;
+            int by = barY;
+            if (mx >= bx && mx <= bx + 22 && my >= by && my <= by + 22)
                 return noms[i];
         }
         return null;

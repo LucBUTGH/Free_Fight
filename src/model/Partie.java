@@ -49,6 +49,9 @@ public class Partie {
     // Augmente quand un bâtiment ennemi est détruit
     private int score;
 
+    // Or gagné pendant le combat en détruisant des bâtiments — dépensé pour acheter des renforts
+    private int orCombat;
+
     // Niveaux d'amélioration des troupes du joueur
     private Ameliorations ameliorations;
 
@@ -67,6 +70,7 @@ public class Partie {
         defenses        = new ArrayList<>();
         autresBatiments = new ArrayList<>();
         score           = 0;
+        orCombat        = 0;
 
         switch (niveau) {
             case 2:  configurerNiveau2(); break;
@@ -81,7 +85,7 @@ public class Partie {
     }
 
     private void configurerNiveau1() {
-        secondesRestantes = 120;
+        secondesRestantes = 90;
         hotelDeVille = new Batiment("Hôtel de Ville", 1500, 375, 290);
         chateau = new Chateau("Château de Clan", 500, 150, 20, 30, 600, 300);
         defenses.add(new Defense("Canon",       200, 150, 15, 30, 200, 200));
@@ -94,7 +98,7 @@ public class Partie {
 
     // Niveau 2 — Intermédiaire : HdV renforcé, 4 défenses, château plus fort
     private void configurerNiveau2() {
-        secondesRestantes = 120;
+        secondesRestantes = 105;
         hotelDeVille = new Batiment("Hôtel de Ville", 2000, 375, 290);
         chateau = new Chateau("Château de Clan", 700, 160, 30, 25, 600, 300);
         defenses.add(new Defense("Canon",       250, 155, 18, 28, 200, 200));
@@ -106,7 +110,7 @@ public class Partie {
         autresBatiments.add(new Batiment("Laboratoire",  1000, 250, 450));
     }
 
-    // Niveau 3 — Difficile : 5 défenses, château avec grande portée
+    // Niveau 3 — Difficile : 6 défenses, 5 bâtiments
     private void configurerNiveau3() {
         secondesRestantes = 120;
         hotelDeVille = new Batiment("Hôtel de Ville", 2500, 375, 290);
@@ -116,25 +120,33 @@ public class Partie {
         defenses.add(new Defense("Tour Archer",  200, 240, 12, 16, 500, 280));
         defenses.add(new Defense("Tour Archer",  200, 240, 12, 16, 650, 400));
         defenses.add(new Defense("Mortier",      400, 200, 35, 35, 360, 430));
-        autresBatiments.add(new Batiment("Cabane en Or",   700, 600, 150));
-        autresBatiments.add(new Batiment("Extracteur",     500, 700, 300));
-        autresBatiments.add(new Batiment("Laboratoire",   1200, 250, 450));
+        defenses.add(new Defense("Canon",        280, 155, 20, 26, 100, 340));
+        autresBatiments.add(new Batiment("Cabane en Or",   700,  600, 150));
+        autresBatiments.add(new Batiment("Extracteur",     500,  700, 300));
+        autresBatiments.add(new Batiment("Laboratoire",   1200,  250, 450));
+        autresBatiments.add(new Batiment("Forge",          600,  500, 460));
+        autresBatiments.add(new Batiment("Caserne",        550,  130, 460));
     }
 
-    // Niveau 4 — Expert : 6 défenses, temps réduit (1m45), 2 Pekka seulement
+    // Niveau 4 — Expert : 8 défenses, 6 bâtiments, temps réduit (1m45), 2 Pekka
     private void configurerNiveau4() {
         secondesRestantes = 105;
         hotelDeVille = new Batiment("Hôtel de Ville", 3000, 375, 290);
         chateau = new Chateau("Château de Clan", 1500, 220, 50, 20, 600, 300);
         defenses.add(new Defense("Canon",        350, 165, 25, 22, 200, 200));
         defenses.add(new Defense("Canon",        350, 165, 25, 22, 420, 150));
+        defenses.add(new Defense("Canon",        350, 165, 25, 22, 100, 250));
         defenses.add(new Defense("Tour Archer",  250, 250, 15, 15, 500, 280));
         defenses.add(new Defense("Tour Archer",  250, 250, 15, 15, 650, 400));
         defenses.add(new Defense("Mortier",      500, 210, 40, 30, 360, 430));
+        defenses.add(new Defense("Mortier",      500, 210, 40, 30, 500, 450));
         defenses.add(new Defense("Inferno",      400, 180, 35, 18, 300, 350));
-        autresBatiments.add(new Batiment("Cabane en Or",   800, 600, 150));
-        autresBatiments.add(new Batiment("Extracteur",     600, 700, 300));
-        autresBatiments.add(new Batiment("Laboratoire",   1500, 250, 450));
+        autresBatiments.add(new Batiment("Cabane en Or",   800,  600, 150));
+        autresBatiments.add(new Batiment("Extracteur",     600,  700, 300));
+        autresBatiments.add(new Batiment("Laboratoire",   1500,  250, 450));
+        autresBatiments.add(new Batiment("Forge",          700,  700, 430));
+        autresBatiments.add(new Batiment("Caserne",        650,  130, 460));
+        autresBatiments.add(new Batiment("Entrepôt",       550,  150, 380));
     }
 
     /**
@@ -202,22 +214,26 @@ public class Partie {
         // aEteComptee() évite de scorer plusieurs fois le même bâtiment
         for (Defense d : defenses) {
             if (d.estDetruit() && !d.aEteComptee()) {
-                score += 100;
+                score    += 100;
+                orCombat += 40;
                 d.marquerComptee();
             }
         }
         for (Batiment b : autresBatiments) {
             if (b.estDetruit() && !b.aEteComptee()) {
-                score += 50;
+                score    += 50;
+                orCombat += 25;
                 b.marquerComptee();
             }
         }
         if (hotelDeVille.estDetruit() && !hotelDeVille.aEteComptee()) {
-            score += 500;
+            score    += 500;
+            orCombat += 100;
             hotelDeVille.marquerComptee();
         }
         if (chateau.estDetruit() && !chateau.aEteComptee()) {
-            score += 200;
+            score    += 200;
+            orCombat += 60;
             chateau.marquerComptee();
         }
 
@@ -361,9 +377,18 @@ public class Partie {
         return etoiles;
     }
 
+    // Vrai quand le joueur ne peut plus rien faire (stock vide + aucune troupe vivante)
+    public boolean estDefaiteAnticipee() {
+        if (stockBarbare > 0 || stockSorcier > 0 || stockPekka > 0) return false;
+        for (Troupe t : troupes) {
+            if (t.getCamp() == Camp.JOUEUR && !t.estMorte()) return false;
+        }
+        return true;
+    }
+
     // Indique si la partie est terminée
     public boolean estTerminee() {
-        return tempsEcoule() || getPourcentageDestruction() >= 100;
+        return tempsEcoule() || getPourcentageDestruction() >= 100 || estDefaiteAnticipee();
     }
 
     // Indique si le joueur a gagné (au moins 1 étoile)
@@ -374,5 +399,31 @@ public class Partie {
     // Indique si le joueur a perdu (0 étoile et temps écoulé)
     public boolean estPerdue() {
         return estTerminee() && getEtoiles() == 0;
+    }
+
+    public int getOrCombat() { return orCombat; }
+
+    // Prix en or de combat pour acheter 1 troupe supplémentaire
+    public static int getPrixTroupe(String type) {
+        switch (type) {
+            case "Barbare": return 20;
+            case "Sorcier": return 60;
+            case "Pekka":   return 120;
+            default:        return Integer.MAX_VALUE;
+        }
+    }
+
+    // Achète 1 troupe avec l'or de combat — retourne false si pas assez d'or
+    public boolean acheterTroupe(String type) {
+        int prix = getPrixTroupe(type);
+        if (orCombat < prix) return false;
+        orCombat -= prix;
+        switch (type) {
+            case "Barbare": stockBarbare++; break;
+            case "Sorcier": stockSorcier++; break;
+            case "Pekka":   stockPekka++;   break;
+            default: return false;
+        }
+        return true;
     }
 }
