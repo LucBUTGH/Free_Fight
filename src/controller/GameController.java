@@ -3,7 +3,7 @@ package controller;
 import model.*;
 import view.Affichage;
 
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.List;
  *
  * Responsabilités :
  *  - Posséder la Partie (état du jeu)
- *  - Gérer les timers (boucle de jeu 40ms + chronomètre 1s)
+ *  - Gérer les threads (boucle de jeu 40ms + chronomètre 1s)
  *  - Interpréter les événements souris et les traduire en actions sur le modèle
  *  - Maintenir le type de troupe sélectionné dans la barre du bas
  */
@@ -23,8 +23,9 @@ public class GameController {
 
     private Affichage affichage;
 
-    private final Timer timerJeu;    // boucle 40 ms : déplace les troupes + redessine
-    private Timer       timerChrono; // tick 1 s : décrémente le chrono
+    private Thread threadJeu;    // boucle 40 ms : déplace les troupes + redessine
+    private Thread threadChrono; // tick 1 s : décrémente le chrono
+    private volatile boolean running = false; // partagé entre les deux threads
 
     private static final int AVATAR_SIZE    = 50;
     private static final int AVATAR_SPACING = 80;
@@ -38,6 +39,10 @@ public class GameController {
     // null si aucun type n'est sélectionné
     private String typeSelectionne = null;
 
+    // Pekka déployé sélectionné par le joueur pour le déplacer manuellement
+    // null si aucun Pekka n'est sélectionné
+    private Pekka pekkaActive = null;
+
 
     /**
      * Initialise le contrôleur avec une partie existante.
@@ -46,36 +51,60 @@ public class GameController {
      * @param partie  La partie à contrôler
      */
     // Garde pour ne pas appeler notifierFinPartie() deux fois
-    private boolean finNotifiee = false;
+    private volatile boolean finNotifiee = false;
 
     public GameController(Partie partie) {
         this.partie = partie;
 
-        timerJeu = new Timer(40, e -> {
-            partie.update();
-            if (affichage != null) affichage.repaint();
-            // Victoire par destruction totale avant la fin du chrono
-            if (!finNotifiee && partie.estTerminee()) {
-                arreterTimers();
-                notifierFinPartie();
+        threadJeu = new Thread(() -> {
+            while (running) {
+                partie.update();
+                SwingUtilities.invokeLater(() -> {
+                    if (affichage != null) affichage.repaint();
+                });
+                if (!finNotifiee && partie.estTerminee()) {
+                    arreterThreads();
+                    SwingUtilities.invokeLater(this::notifierFinPartie);
+                    return;
+                }
+                try {
+                    Thread.sleep(40);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
             }
-        });
+        }, "thread-jeu");
 
-        timerChrono = new Timer(1000, e -> {
-            if (!partie.tempsEcoule()) {
-                partie.decrementerTemps();
-                if (affichage != null) affichage.repaint();
-            } else if (!finNotifiee) {
-                arreterTimers();
-                notifierFinPartie();
+        threadChrono = new Thread(() -> {
+            while (running) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                if (!partie.tempsEcoule()) {
+                    partie.decrementerTemps();
+                    SwingUtilities.invokeLater(() -> {
+                        if (affichage != null) affichage.repaint();
+                    });
+                } else if (!finNotifiee) {
+                    arreterThreads();
+                    SwingUtilities.invokeLater(this::notifierFinPartie);
+                    return;
+                }
             }
-        });
+        }, "thread-chrono");
     }
 
-    private void arreterTimers() {
-        timerJeu.stop();
-        timerChrono.stop();
-        if (affichage != null) affichage.repaint();
+    private void arreterThreads() {
+        running = false;
+        threadJeu.interrupt();
+        threadChrono.interrupt();
+        SwingUtilities.invokeLater(() -> {
+            if (affichage != null) affichage.repaint();
+        });
     }
 
     /**
@@ -158,10 +187,11 @@ public class GameController {
         });
     }
 
-    /** Démarre les deux timers. Appelé par Main après setAffichage(). */
+    /** Démarre les deux threads. Appelé par Main après setAffichage(). */
     public void demarrer() {
-        timerJeu.start();
-        timerChrono.start();
+        running = true;
+        threadJeu.start();
+        threadChrono.start();
     }
 
 
@@ -196,11 +226,29 @@ public class GameController {
         String type = getTypeFromBar(mx, my);
         if (type != null) {
             typeSelectionne = type;
+            pekkaActive = null; // annule la sélection d'un Pekka en cours
             affichage.repaint();
             return;
         }
 
-        // 2. Type sélectionné + clic sur la carte → déployer UNE troupe
+        // 2. Clic sur un Pekka déployé sur la carte → le sélectionner pour le déplacer
+        Pekka pekkaClique = getPekkaAt(mx, my);
+        if (pekkaClique != null) {
+            pekkaActive = pekkaClique;
+            typeSelectionne = null; // on ne déploie plus, on déplace
+            affichage.repaint();
+            return;
+        }
+
+        // 3. Un Pekka est sélectionné → lui donner la destination du clic
+        if (pekkaActive != null) {
+            pekkaActive.setDestination(mx, my);
+            pekkaActive = null;
+            affichage.repaint();
+            return;
+        }
+
+        // 4. Type sélectionné + clic sur la carte → déployer UNE troupe
         if (typeSelectionne != null) {
             int stock = getStock(typeSelectionne);
 
@@ -225,11 +273,30 @@ public class GameController {
             return;
         }
 
-        // 3. Clic libre test de portée des défenses
+        // 5. Clic libre → test de portée des défenses
         List<Defense> enPortee = partie.getDefensesEnPortee(mx, my);
         affichage.setClickInfo(mx, my, enPortee);
         affichage.repaint();
     }
+
+    /**
+     * Cherche un Pekka déployé dont la zone (40x40px) contient le point (mx, my).
+     * Retourne null si aucun Pekka n'est cliqué.
+     */
+    private Pekka getPekkaAt(int mx, int my) {
+        for (Troupe t : partie.getTroupes()) {
+            if (!(t instanceof Pekka)) continue;
+            if (t.estMorte() || !t.isDeployee()) continue;
+            if (mx >= t.getX() && mx <= t.getX() + 40
+             && my >= t.getY() && my <= t.getY() + 40) {
+                return (Pekka) t;
+            }
+        }
+        return null;
+    }
+
+    /** Retourne le Pekka actuellement sélectionné pour le déplacement (ou null). */
+    public Pekka getPekkaActive() { return pekkaActive; }
 
 
 
