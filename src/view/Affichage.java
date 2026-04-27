@@ -1,11 +1,29 @@
 package view;
 
-import javax.swing.*;
-import java.awt.*;
+import controller.GameController;
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Point;
+import java.awt.RenderingHints;
 import java.util.ArrayList;
 import java.util.List;
-import model.*;
-import controller.GameController;
+import javax.swing.ImageIcon;
+import javax.swing.JPanel;
+import model.Barbare;
+import model.Batiment;
+import model.Chateau;
+import model.Defense;
+import model.Partie;
+import model.Pekka;
+import model.Sorcier;
+import model.Troupe;
 
 /**
  * Vue principale du jeu.
@@ -111,8 +129,28 @@ public class Affichage extends JPanel {
         private static final int CELL     = 50; // taille d'une cellule de la grille
         private static final int DEF_SIZE = 30; // taille d'une défense en pixels
 
+            // ── Constantes pour l'affichage des étoiles (style Clash of Clans) ──
+            private static final int STAR_SIZE = 28;         // Diamètre d'une étoile en pixels
+            private static final int STAR_SPACING = 8;       // Espace entre deux étoiles
+            private static final int STAR_Y_POSITION = 46;   // Position Y depuis le haut
+            private static final double STAR_INNER_RATIO = 0.4;  // Ratio rayon intérieur / rayon extérieur
+            private static final int STAR_COUNT = 3;         // Nombre d'étoiles Clash of Clans
+            private static final int STAR_POINTS = 10;       // Nombre de points pour dessiner une étoile
+            
+            // Couleurs des étoiles
+            private static final Color STAR_FILLED_COLOR = new Color(255, 215, 0);     // Or pour étoiles gagnées
+            private static final Color STAR_FILLED_BORDER = new Color(200, 160, 0);   // Bordure or foncé
+            private static final Color STAR_EMPTY_FILL = new Color(80, 80, 80);       // Gris pour étoiles non gagnées
+            private static final Color STAR_EMPTY_BORDER = new Color(140, 140, 140);  // Gris clair pour bordure
+            private static final Color STARS_BACKGROUND = new Color(0, 0, 0, 160);    // Fond semi-transparent
+            private static final Color DESTRUCTION_TEXT_COLOR = Color.WHITE;          // Texte du pourcentage
+        
+        /**
+         * Constructeur du panneau de la carte.
+         * Définit la couleur de fond verte (herbe).
+         */
         public MapPanel() {
-            setBackground(new Color(34, 139, 34)); // vert herbe
+            setBackground(new Color(34, 139, 34)); // vert herbe (Clash of Clans style)
         }
 
         @Override
@@ -515,67 +553,156 @@ public class Affichage extends JPanel {
             }
         }
 
-        // Dessine les 3 étoiles (style Clash of Clans)
+        /**
+         * Affiche le système de récompense : 3 étoiles (Clash of Clans) avec le pourcentage de destruction.
+         * Les étoiles gagnées sont affichées en doré, les étoiles non gagnées en gris.
+         * 
+         * Algorithme :
+         * - Chaque étoile est un polygone à 10 points alternant entre rayon externe et rayon interne
+         * - Les angles sont calculés en degrés (0° en haut)
+         * - L'affichage est centré horizontalement dans la fenêtre
+         * 
+         * @param g2 Contexte graphique 2D pour le rendu
+         * 
+         * @see Partie#getEtoiles() pour accéder au nombre d'étoiles gagnées
+         * @see Partie#getPourcentageDestruction() pour le pourcentage de destruction
+         */
         private void dessinerEtoiles(Graphics2D g2) {
-            int etoiles = partie.getEtoiles();
-            int pourcentage = partie.getPourcentageDestruction();
+            // Récupère les données de la partie
+            int etoilesGagnees = partie.getEtoiles();
+            int pourcentageDestruction = partie.getPourcentageDestruction();
 
-            int starSize = 28;
-            int spacing = 8;
-            int totalWidth = 3 * starSize + 2 * spacing;
-            int startX = getWidth() / 2 - totalWidth / 2;
-            int y = 46;
+            // Calculs de positionnement
+            int largeurTotale = STAR_COUNT * STAR_SIZE + (STAR_COUNT - 1) * STAR_SPACING;
+            int posX = getWidth() / 2 - largeurTotale / 2;
+            int posY = STAR_Y_POSITION;
 
-            // Fond arrondi derrière les étoiles + pourcentage
-            String pctText = pourcentage + "%";
-            g2.setFont(new Font("SansSerif", Font.BOLD, 14));
-            FontMetrics fm = g2.getFontMetrics();
-            int bgWidth = totalWidth + 16 + fm.stringWidth(pctText) + 10;
-            int bgX = getWidth() / 2 - bgWidth / 2;
-            g2.setColor(new Color(0, 0, 0, 160));
-            g2.fillRoundRect(bgX, y - 4, bgWidth, starSize + 8, 10, 10);
+            // Étape 1 : Dessiner le fond semi-transparent derrière les étoiles
+            dessinerFondEtoiles(g2, posX, posY, largeurTotale, pourcentageDestruction);
 
-            // Dessiner chaque étoile
-            for (int i = 0; i < 3; i++) {
-                int cx = startX + i * (starSize + spacing) + starSize / 2;
-                int cy = y + starSize / 2;
+            // Étape 2 : Dessiner les 3 étoiles individuelles
+            for (int i = 0; i < STAR_COUNT; i++) {
+                boolean etoileGagnee = i < etoilesGagnees;
+                int[] xPoints = new int[STAR_POINTS];
+                int[] yPoints = new int[STAR_POINTS];
 
-                int[] xPoints = new int[10];
-                int[] yPoints = new int[10];
-                double outerR = starSize / 2.0;
-                double innerR = outerR * 0.4;
+                // Génère les coordonnées des 10 points de l'étoile
+                genererPointsEtoile(xPoints, yPoints, posX, posY, i);
 
-                for (int j = 0; j < 10; j++) {
-                    double angle = Math.PI / 2 + j * Math.PI / 5;
-                    double r = (j % 2 == 0) ? outerR : innerR;
-                    xPoints[j] = cx + (int) (Math.cos(angle) * r);
-                    yPoints[j] = cy - (int) (Math.sin(angle) * r);
-                }
-
-                if (i < etoiles) {
-                    // Étoile remplie (dorée)
-                    g2.setColor(new Color(255, 215, 0));
-                    g2.fillPolygon(xPoints, yPoints, 10);
-                    g2.setColor(new Color(200, 160, 0));
-                    g2.setStroke(new BasicStroke(2));
-                    g2.drawPolygon(xPoints, yPoints, 10);
-                    g2.setStroke(new BasicStroke(1));
+                // Remplit l'étoile avec la couleur appropriée
+                if (etoileGagnee) {
+                    dessinerEtoileRemplie(g2, xPoints, yPoints);
                 } else {
-                    // Étoile vide (silhouette grise)
-                    g2.setColor(new Color(80, 80, 80));
-                    g2.fillPolygon(xPoints, yPoints, 10);
-                    g2.setColor(new Color(140, 140, 140));
-                    g2.setStroke(new BasicStroke(2));
-                    g2.drawPolygon(xPoints, yPoints, 10);
-                    g2.setStroke(new BasicStroke(1));
+                    dessinerEtoileVide(g2, xPoints, yPoints);
                 }
             }
+        }
 
-            // Pourcentage de destruction à droite des étoiles
-            int textX = startX + totalWidth + 10;
-            g2.setColor(Color.WHITE);
+        /**
+         * Dessine le fond semi-transparent et le pourcentage de destruction.
+         * 
+         * @param g2 Contexte graphique
+         * @param etoilesX Position X de départ des étoiles
+         * @param etoilesY Position Y des étoiles
+         * @param largeurEtoiles Largeur totale occupée par les 3 étoiles
+         * @param pourcentage Pourcentage de destruction à afficher
+         */
+        private void dessinerFondEtoiles(Graphics2D g2, int etoilesX, int etoilesY, 
+                                        int largeurEtoiles, int pourcentage) {
+            String textePercent = pourcentage + "%";
             g2.setFont(new Font("SansSerif", Font.BOLD, 14));
-            g2.drawString(pctText, textX, y + starSize / 2 + 5);
+            FontMetrics fontMetrics = g2.getFontMetrics();
+            int largeurTexte = fontMetrics.stringWidth(textePercent);
+
+            // Largeur du fond : étoiles + espace + pourcentage
+            int largeurFond = largeurEtoiles + 16 + largeurTexte + 10;
+            int xFond = getWidth() / 2 - largeurFond / 2;
+            int yFond = etoilesY - 4;
+
+            // Fond arrondi
+            g2.setColor(STARS_BACKGROUND);
+            g2.fillRoundRect(xFond, yFond, largeurFond, STAR_SIZE + 8, 10, 10);
+
+            // Texte du pourcentage (à droite des étoiles)
+            int xTexte = etoilesX + largeurEtoiles + 10;
+            g2.setColor(DESTRUCTION_TEXT_COLOR);
+            g2.drawString(textePercent, xTexte, etoilesY + STAR_SIZE / 2 + 5);
+        }
+
+        /**
+         * Génère les 10 points d'une étoile en utilisant la trigonométrie.
+         * 
+         * Géométrie :
+         * - Chaque étoile a 5 pointes avec rayons alternants (externe, interne)
+         * - Les angles commencent à 90° (haut) et tournent de 36° (360°/10)
+         * - Les points pairs (0,2,4...) utilisent le rayon externe
+         * - Les points impairs (1,3,5...) utilisent le rayon interne
+         * 
+         * @param xPoints Tableau à remplir avec les coordonnées X
+         * @param yPoints Tableau à remplir avec les coordonnées Y
+         * @param posX Position X de départ (centre du groupe d'étoiles)
+         * @param posY Position Y des étoiles
+         * @param indexEtoile Index de l'étoile (0, 1, ou 2)
+         */
+        private void genererPointsEtoile(int[] xPoints, int[] yPoints, int posX, int posY, int indexEtoile) {
+            // Position du centre de cette étoile spécifique
+            int centreX = posX + indexEtoile * (STAR_SIZE + STAR_SPACING) + STAR_SIZE / 2;
+            int centreY = posY + STAR_SIZE / 2;
+
+            // Rayons : externe pour les pointes, interne pour les creux
+            double rayonExterne = STAR_SIZE / 2.0;
+            double rayonInterne = rayonExterne * STAR_INNER_RATIO;
+
+            // Calcule les 10 points (5 pointes = 10 points alternants)
+            for (int j = 0; j < STAR_POINTS; j++) {
+                // Angle en radians : commence à 90° (π/2) et ajoute j × 36° (π/5)
+                double angle = Math.PI / 2 + j * Math.PI / 5;
+                
+                // Alterne entre rayon externe (points pairs) et interne (impairs)
+                double rayon = (j % 2 == 0) ? rayonExterne : rayonInterne;
+                
+                // Convertit coordonnées polaires en coordonnées cartésiennes
+                xPoints[j] = centreX + (int) (Math.cos(angle) * rayon);
+                yPoints[j] = centreY - (int) (Math.sin(angle) * rayon);
+            }
+        }
+
+        /**
+         * Dessine une étoile remplie (dorée) pour une étoile gagnée.
+         * 
+         * @param g2 Contexte graphique
+         * @param xPoints Coordonnées X des 10 points
+         * @param yPoints Coordonnées Y des 10 points
+         */
+        private void dessinerEtoileRemplie(Graphics2D g2, int[] xPoints, int[] yPoints) {
+            // Remplissage doré
+            g2.setColor(STAR_FILLED_COLOR);
+            g2.fillPolygon(xPoints, yPoints, STAR_POINTS);
+            
+            // Bordure or foncé pour relief
+            g2.setColor(STAR_FILLED_BORDER);
+            g2.setStroke(new BasicStroke(2));
+            g2.drawPolygon(xPoints, yPoints, STAR_POINTS);
+            g2.setStroke(new BasicStroke(1));
+        }
+
+        /**
+         * Dessine une étoile vide (grise) pour une étoile non gagnée.
+         * 
+         * @param g2 Contexte graphique
+         * @param xPoints Coordonnées X des 10 points
+         * @param yPoints Coordonnées Y des 10 points
+         */
+        private void dessinerEtoileVide(Graphics2D g2, int[] xPoints, int[] yPoints) {
+            // Remplissage gris
+            g2.setColor(STAR_EMPTY_FILL);
+            g2.fillPolygon(xPoints, yPoints, STAR_POINTS);
+            
+            // Bordure gris clair
+            g2.setColor(STAR_EMPTY_BORDER);
+            g2.setStroke(new BasicStroke(2));
+            g2.drawPolygon(xPoints, yPoints, STAR_POINTS);
+            g2.setStroke(new BasicStroke(1));
         }
 
         // Dessine l'écran de fin (victoire ou défaite)
