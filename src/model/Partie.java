@@ -160,7 +160,7 @@ public class Partie {
      * 5. Calcul du score
      * 6. Suppression des troupes mortes
      */
-    public void update() {
+    public synchronized void update() {
 
         // ── 1. Spawn du Château de Clan 
         // Se déclenche une seule fois quand une troupe du joueur entre dans la portée
@@ -261,7 +261,7 @@ public class Partie {
      * @param y         Position Y du clic
      * @return          Nombre réellement déployé (limité par le stock)
      */
-    public int deployerTroupes(String type, int quantite, int x, int y) {
+    public synchronized int deployerTroupes(String type, int quantite, int x, int y) {
         int deployed = 0;
 
         for (int i = 0; i < quantite; i++) {

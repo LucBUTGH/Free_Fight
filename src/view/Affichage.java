@@ -433,6 +433,14 @@ public class Affichage extends JPanel {
                 Image img = imageFor(t);
                 if (img != null) g.drawImage(img, t.getX(), t.getY(), 40, 40, Affichage.this);
 
+                // Contour cyan si ce Pekka est sélectionné pour déplacement
+                if (t instanceof model.Pekka && t == controller.getPekkaActive()) {
+                    g2.setColor(Color.CYAN);
+                    g2.setStroke(new BasicStroke(3));
+                    g2.drawRect(t.getX(), t.getY(), 40, 40);
+                    g2.setStroke(new BasicStroke(1));
+                }
+
                 // Barre de vie au-dessus
                 dessinerBarreVie(g2, t.getX(), t.getY() - 8, 40, t.getHealth(), t.getHealthMax());
             }
