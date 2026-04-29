@@ -150,18 +150,32 @@ public class GameController extends Thread {
 
 
     /**
-     * Interprète un clic souris selon le contexte, dans cet ordre de priorité :
-     * <ol>
-     *   <li>Bouton "+" dans la barre → achat d'une troupe avec l'or de combat.</li>
-     *   <li>Avatar dans la barre → sélection du type de troupe à déployer.</li>
-     *   <li>Clic sur un Pekka déployé → sélection pour déplacement manuel.</li>
-     *   <li>Pekka déjà sélectionné → assignation de la destination.</li>
-     *   <li>Type sélectionné + clic carte → déploiement d'une troupe.</li>
-     *   <li>Clic libre → affichage des défenses à portée du point cliqué.</li>
-     * </ol>
+     * Gère le clic gauche de la souris sur la carte.
      *
-     * @param mx  Coordonnée X du clic dans le repère du panneau carte.
-     * @param my  Coordonnée Y du clic dans le repère du panneau carte.
+     * Cette méthode est le point d'entrée principal pour toutes les interactions
+     * du joueur. Elle traite les actions dans un ordre de priorité fixe :
+     *
+     *   0. Clic sur le bouton "+" d'un avatar → achète une troupe avec l'or de combat.
+     *      Si l'or est insuffisant, affiche un message d'erreur.
+     *
+     *   1. Clic sur un avatar dans la barre du bas → sélectionne le type de troupe
+     *      à déployer (Pekka, Sorcier ou Barbare). Annule toute sélection de Pekka en cours.
+     *
+     *   2. Clic sur un Pekka déjà déployé sur la carte → sélectionne ce Pekka
+     *      pour pouvoir lui donner un ordre de déplacement au prochain clic.
+     *
+     *   3. Un Pekka est sélectionné (étape 2) + clic sur la carte → envoie ce Pekka
+     *      vers la position cliquée, puis désélectionne.
+     *
+     *   4. Un type de troupe est sélectionné (étape 1) + clic sur la carte → déploie
+     *      une troupe de ce type à l'endroit cliqué. Si le stock est épuisé,
+     *      affiche un message et annule la sélection.
+     *
+     *   5. Aucune sélection active → affiche les défenses ennemies à portée
+     *      du point cliqué (mode inspection).
+     *
+     * @param mx  Coordonnée X du clic gauche (en pixels sur la carte)
+     * @param my  Coordonnée Y du clic gauche (en pixels sur la carte)
      */
     private void handleClick(int mx, int my) {
 
@@ -253,6 +267,21 @@ public class GameController extends Thread {
     /**
      * Clic droit : envoie tous les Pekkas déployés du joueur vers (mx, my).
      */
+    /**
+     * Gère le clic droit de la souris sur la carte.
+     *
+     * Quand le joueur fait un clic droit à la position (mx, my),
+     * cette méthode parcourt toutes les troupes de la partie et
+     * donne un ordre de déplacement à chaque Pekka du joueur
+     * qui est déjà déployé et encore en vie.
+     *
+     * Le Pekka se dirigera alors vers le point cliqué comme destination.
+     * Si au moins un Pekka a reçu l'ordre, la carte est redessinée
+     * pour refléter immédiatement le changement.
+     *
+     * @param mx  Coordonnée X du clic droit (en pixels sur la carte)
+     * @param my  Coordonnée Y du clic droit (en pixels sur la carte)
+     */
     private void handleRightClick(int mx, int my) {
         boolean moved = false;
         for (Troupe t : partie.getTroupes()) {
@@ -290,13 +319,21 @@ public class GameController extends Thread {
         return null;
     }
 
+   
     /**
-     * Détecte si le clic tombe sur l'un des boutons "+" placés à droite de chaque avatar
-     * (zone de 22×22 px). Retourne le type correspondant, ou {@code null}.
+     * Détecte si le clic tombe sur le bouton "+" d'achat placé à droite de chaque avatar.
      *
-     * @param mx  Coordonnée X du clic.
-     * @param my  Coordonnée Y du clic.
-     * @return    "Pekka", "Sorcier", "Barbare", ou {@code null}.
+     * Chaque avatar dans la barre du bas possède un petit bouton "+" de 22×22 pixels,
+     * positionné juste à droite de l'image de l'avatar (décalage : AVATAR_SIZE + 3 px).
+     * Cette méthode vérifie si les coordonnées du clic (mx, my) se trouvent
+     * dans cette zone pour l'un des 3 types de troupes.
+     *
+     * Si le clic correspond, le joueur souhaite acheter une troupe de ce type
+     * avec l'or de combat (distinct de l'or de sauvegarde).
+     *
+     * @param mx  Coordonnée X du clic (en pixels sur la carte)
+     * @param my  Coordonnée Y du clic (en pixels sur la carte)
+     * @return    "Pekka", "Sorcier" ou "Barbare" si le "+" correspondant est cliqué, sinon null
      */
     private String getAchatFromBar(int mx, int my) {
         int barY      = affichage.getMapPanel().getHeight() - 80;
