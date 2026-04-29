@@ -1,19 +1,11 @@
 package model;
 
-/**
- * Troupe lourde contrôlable manuellement par le joueur.
- *
- * Le Pekka peut recevoir une destination de déplacement libre via clic,
- * avant de reprendre son comportement automatique.
- *
- * Statistiques : 200 PV, 60 dégâts, vitesse 1.
- */
 public class Pekka extends Troupe {
 
-    // Destination de déplacement manuel définie par le joueur.
-    // Vaut 0,0 quand aucune destination n'est active.
-    private int targetX = 0;
-    private int targetY = 0;
+    // Attributs de destination (propres au Pekka)
+    private Integer targetX = null;
+    private Integer targetY = null;
+
     // Stats de base (niveau 1) : 200 PV, 60 dégâts, vitesse 1.
     // Chaque niveau ajoute : +50 PV, +15 dégâts, et +1 vitesse tous les 2 niveaux.
     public Pekka(int x, int y, int niveau) {
@@ -28,38 +20,32 @@ public class Pekka extends Troupe {
         this(x, y, 1);
     }
 
-    /**
-     * Définit une destination de déplacement libre.
-     * Annule la cible bâtiment le temps d'atteindre la destination.
-     *
-     * @param x  Coordonnée X de destination
-     * @param y  Coordonnée Y de destination
-     */
+    // Définir une destination
     public void setDestination(int x, int y) {
         this.targetX = x;
         this.targetY = y;
-        this.setCible(null); // annule la cible bâtiment pendant le déplacement
+
+        // Enlever la cible automatique
+        this.setCible(null);
     }
 
-    /**
-     * Comportement du Pekka par tick.
-     *
-     * Si une destination manuelle est définie → se déplacer vers elle
-     * Sinon → comportement standard (attaque bâtiment ou troupe ennemie)
-     */
+    // Override du comportement
     @Override
     public void agirManuellement() {
-        if (targetX != 0 && targetY != 0) {
+
+        // Déplacement manuel UNIQUEMENT pour le Pekka
+        if (targetX != null && targetY != null) {
             if (!isArrived(targetX, targetY)) {
                 moveTo(targetX, targetY);
-                return;
             } else {
-                // Arrivé à destination → on efface la destination
-                targetX = 0;
-                targetY = 0;
+                // Arrivé
+                targetX = null;
+                targetY = null;
             }
+            return;
         }
-        // Comportement normal hérité
+
+        // Sinon comportement normal
         super.agirManuellement();
     }
 }

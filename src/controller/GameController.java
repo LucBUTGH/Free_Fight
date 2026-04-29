@@ -182,7 +182,12 @@ public class GameController {
         affichage.getMapPanel().addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                handleClick(e.getX(), e.getY());
+                if (e.getButton() == MouseEvent.BUTTON3) {
+                    // Clic droit → déplacer tous les Pekkas déployés vers ce point
+                    handleRightClick(e.getX(), e.getY());
+                } else {
+                    handleClick(e.getX(), e.getY());
+                }
             }
         });
     }
@@ -293,6 +298,21 @@ public class GameController {
             }
         }
         return null;
+    }
+
+    /**
+     * Clic droit : envoie tous les Pekkas déployés du joueur vers (mx, my).
+     */
+    private void handleRightClick(int mx, int my) {
+        boolean moved = false;
+        for (Troupe t : partie.getTroupes()) {
+            if (t instanceof Pekka && t.getCamp() == Camp.JOUEUR
+                    && t.isDeployee() && !t.estMorte()) {
+                ((Pekka) t).setDestination(mx, my);
+                moved = true;
+            }
+        }
+        if (moved) affichage.repaint();
     }
 
     /** Retourne le Pekka actuellement sélectionné pour le déplacement (ou null). */
