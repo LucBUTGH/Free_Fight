@@ -188,18 +188,18 @@ public class Affichage extends JPanel {
         // Méthode qui retourne la troupe située à la position du clic de la souris.
         // Parcourir la liste des troupes et vérifier si les coordonnées de la souris
         // Si une troupe est trouvée, la retourner, sinon retourner null.
-        private Troupe getTroupeAtPosition(int mouseX, int mouseY) {
-            for (Troupe t : partie.getTroupes()) {
-                int tx = t.getX();
-                int ty = t.getY();
-
-                if (mouseX >= tx && mouseX <= tx + 40 &&
-                        mouseY >= ty && mouseY <= ty + 40) {
-                    return t;
-                }
-            }
-            return null;
-        }
+//        private Troupe getTroupeAtPosition(int mouseX, int mouseY) {
+//            for (Troupe t : partie.getTroupes()) {
+//                int tx = t.getX();
+//                int ty = t.getY();
+//
+//                if (mouseX >= tx && mouseX <= tx + 40 &&
+//                        mouseY >= ty && mouseY <= ty + 40) {
+//                    return t;
+//                }
+//            }
+//            return null;
+//        }
 
         // Dessine une grille sur le terrain
         private void dessinerGrille(Graphics2D g2) {

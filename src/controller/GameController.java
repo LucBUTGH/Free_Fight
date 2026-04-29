@@ -17,7 +17,7 @@ import java.util.List;
  *  - Interpréter les événements souris et les traduire en actions sur le modèle
  *  - Maintenir le type de troupe sélectionné dans la barre du bas
  */
-public class GameController {
+public class GameController extends Thread {
 
     private final Partie partie;
 
@@ -30,9 +30,9 @@ public class GameController {
     private static final int AVATAR_SIZE    = 50;
     private static final int AVATAR_SPACING = 80;
     private static final int AVATAR_START_X = 20;
-    private static final int DEF_SIZE       = 30;
-    private static final int HOTEL_SIZE     = 50;
-    private static final int BAT_SIZE       = 35;
+    //private static final int DEF_SIZE       = 30;
+    //private static final int HOTEL_SIZE     = 50;
+    //private static final int BAT_SIZE       = 35;
 
 
     // Type de troupe sélectionné dans la barre ("Barbare", "Sorcier", "Pekka")

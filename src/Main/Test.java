@@ -90,7 +90,7 @@ public class Test {
         boolean vraiVictoire = controleurActuel.hotelDeVilleDetruit();
 
         sauvegarde.ajouterOr(orGagne);
-        boolean nouveauNiveau = vraiVictoire && sauvegarde.debloquerNiveauSuivant(niveauActuel);
+        //boolean nouveauNiveau = vraiVictoire && sauvegarde.debloquerNiveauSuivant(niveauActuel);
         sauvegarde.sauvegarder();
 
         boolean peutAvancer = vraiVictoire && niveauActuel < sauvegarde.getNiveauDebloque();
