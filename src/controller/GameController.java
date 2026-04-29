@@ -3,7 +3,6 @@ package controller;
 import model.*;
 import view.Affichage;
 
-import javax.swing.SwingUtilities;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -11,28 +10,29 @@ import java.util.List;
 /**
  * Contrôleur principal du jeu.
  *
- * Responsabilités :
- *  - Posséder la Partie (état du jeu)
- *  - Gérer les threads (boucle de jeu 40ms + chronomètre 1s)
- *  - Interpréter les événements souris et les traduire en actions sur le modèle
- *  - Maintenir le type de troupe sélectionné dans la barre du bas
+ * <p>Responsabilités :</p>
+ * <ul>
+ *   <li>Posséder la {@link Partie} (source de vérité de l'état du jeu).</li>
+ *   <li>Interpréter les événements souris et les traduire en actions sur le modèle.</li>
+ *   <li>Maintenir le type de troupe sélectionné dans la barre du bas.</li>
+ * </ul>
+ *
+ * <p>Ce contrôleur ne gère aucun thread. La boucle de jeu et le chronomètre
+ * sont délégués à {@link GameLoop}, instancié dans le constructeur.</p>
  */
-public class GameController {
+public class GameController extends Thread {
 
-    private final Partie partie;
+    private final Partie   partie;
+    private final GameLoop gameLoop;
 
     private Affichage affichage;
-
-    private Thread threadJeu;    // boucle 40 ms : déplace les troupes + redessine
-    private Thread threadChrono; // tick 1 s : décrémente le chrono
-    private volatile boolean running = false; // partagé entre les deux threads
 
     private static final int AVATAR_SIZE    = 50;
     private static final int AVATAR_SPACING = 80;
     private static final int AVATAR_START_X = 20;
-    private static final int DEF_SIZE       = 30;
-    private static final int HOTEL_SIZE     = 50;
-    private static final int BAT_SIZE       = 35;
+    //private static final int DEF_SIZE       = 30;
+    //private static final int HOTEL_SIZE     = 50;
+    //private static final int BAT_SIZE       = 35;
 
 
     // Type de troupe sélectionné dans la barre ("Barbare", "Sorcier", "Pekka")
@@ -45,90 +45,24 @@ public class GameController {
 
 
     /**
-     * Initialise le contrôleur avec une partie existante.
-     * Crée les deux timers sans les démarrer.
+     * Initialise le contrôleur avec une partie existante et prépare la boucle de jeu.
+     * Aucun thread n'est démarré ici — appeler {@link #demarrer()} après {@link #setAffichage}.
      *
-     * @param partie  La partie à contrôler
+     * @param partie  La partie à contrôler.
      */
-    // Garde pour ne pas appeler notifierFinPartie() deux fois
-    private volatile boolean finNotifiee = false;
-
     public GameController(Partie partie) {
-        this.partie = partie;
-
-        threadJeu = new Thread(() -> {
-            while (running) {
-                partie.update();
-                SwingUtilities.invokeLater(() -> {
-                    if (affichage != null) affichage.repaint();
-                });
-                if (!finNotifiee && partie.estTerminee()) {
-                    arreterThreads();
-                    SwingUtilities.invokeLater(this::notifierFinPartie);
-                    return;
-                }
-                try {
-                    Thread.sleep(40);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
-        }, "thread-jeu");
-
-        threadChrono = new Thread(() -> {
-            while (running) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-                if (!partie.tempsEcoule()) {
-                    partie.decrementerTemps();
-                    SwingUtilities.invokeLater(() -> {
-                        if (affichage != null) affichage.repaint();
-                    });
-                } else if (!finNotifiee) {
-                    arreterThreads();
-                    SwingUtilities.invokeLater(this::notifierFinPartie);
-                    return;
-                }
-            }
-        }, "thread-chrono");
-    }
-
-    private void arreterThreads() {
-        running = false;
-        threadJeu.interrupt();
-        threadChrono.interrupt();
-        SwingUtilities.invokeLater(() -> {
-            if (affichage != null) affichage.repaint();
-        });
+        this.partie   = partie;
+        this.gameLoop = new GameLoop(partie);
     }
 
     /**
-     * Callback appelé quand la partie se termine (temps écoulé).
-     * Implémenté par Main pour afficher l'écran de fin.
-     */
-    private Runnable finPartieCallback;
-
-    /**
-     * Définit le callback de fin de partie.
-     * @param callback Runnable à exécuter quand la partie se termine
+     * Enregistre le callback exécuté sur le thread graphique à la fin de la partie.
+     * Délégué à {@link GameLoop} — doit être appelé avant {@link #demarrer()}.
+     *
+     * @param callback  Action à déclencher (ex. : afficher l'écran de fin).
      */
     public void setFinPartieCallback(Runnable callback) {
-        this.finPartieCallback = callback;
-    }
-
-    /**
-     * Notifie la fin de la partie et appelle le callback si défini.
-     */
-    private void notifierFinPartie() {
-        finNotifiee = true;
-        if (finPartieCallback != null) {
-            finPartieCallback.run();
-        }
+        gameLoop.setFinPartieCallback(callback);
     }
 
     /**
@@ -156,29 +90,36 @@ public class GameController {
     }
 
     /**
-     * Calcule l'or gagné pendant la partie.
-     * Base : 100 par étoile + bonus selon le score.
-     * @return Or gagné
+     * Calcule l'or gagné à l'issue de la partie : 30 or par étoile obtenue.
+     *
+     * @return Or à créditer dans la sauvegarde.
      */
     public int getOrGagne() {
         // 30 or par étoile — progression lente, améliorations coûteuses
         return getEtoiles() * 30;
     }
 
-    // Vrai uniquement si l'Hôtel de Ville a été détruit (condition réelle de victoire)
+    /**
+     * Indique si l'Hôtel de Ville a été détruit.
+     * C'est la condition requise pour valider une victoire et débloquer le niveau suivant.
+     *
+     * @return {@code true} si l'Hôtel de Ville est à 0 PV.
+     */
     public boolean hotelDeVilleDetruit() {
         return partie.getHotelDeVille().estDetruit();
     }
 
 
     /**
-     * Lie la vue au contrôleur et installe le listener souris.
-     * Appelé par Main une fois la fenêtre construite.
+     * Lie la vue au contrôleur, la transmet à {@link GameLoop} et installe
+     * le {@link java.awt.event.MouseListener} sur le panneau de la carte.
+     * Doit être appelé avant {@link #demarrer()}.
      *
-     * @param affichage  La vue principale du jeu
+     * @param affichage  La vue principale du jeu.
      */
     public void setAffichage(Affichage affichage) {
         this.affichage = affichage;
+        gameLoop.setAffichage(affichage);
         affichage.getMapPanel().addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -192,11 +133,12 @@ public class GameController {
         });
     }
 
-    /** Démarre les deux threads. Appelé par Main après setAffichage(). */
+    /**
+     * Démarre la boucle de jeu en déléguant à {@link GameLoop}.
+     * Doit être appelé après {@link #setAffichage}.
+     */
     public void demarrer() {
-        running = true;
-        threadJeu.start();
-        threadChrono.start();
+        gameLoop.demarrer();
     }
 
 
@@ -208,13 +150,18 @@ public class GameController {
 
 
     /**
-     * Interprète un clic souris selon le contexte :
-     * 1. Clic sur un avatar dans la barre → sélectionner le type
-     * 2. Type sélectionné + clic sur la carte 
-     * 3. Clic libre → test de portée des défenses
+     * Interprète un clic souris selon le contexte, dans cet ordre de priorité :
+     * <ol>
+     *   <li>Bouton "+" dans la barre → achat d'une troupe avec l'or de combat.</li>
+     *   <li>Avatar dans la barre → sélection du type de troupe à déployer.</li>
+     *   <li>Clic sur un Pekka déployé → sélection pour déplacement manuel.</li>
+     *   <li>Pekka déjà sélectionné → assignation de la destination.</li>
+     *   <li>Type sélectionné + clic carte → déploiement d'une troupe.</li>
+     *   <li>Clic libre → affichage des défenses à portée du point cliqué.</li>
+     * </ol>
      *
-     * @param mx  Coordonnée X du clic
-     * @param my  Coordonnée Y du clic
+     * @param mx  Coordonnée X du clic dans le repère du panneau carte.
+     * @param my  Coordonnée Y du clic dans le repère du panneau carte.
      */
     private void handleClick(int mx, int my) {
 
@@ -285,8 +232,11 @@ public class GameController {
     }
 
     /**
-     * Cherche un Pekka déployé dont la zone (40x40px) contient le point (mx, my).
-     * Retourne null si aucun Pekka n'est cliqué.
+     * Cherche un Pekka déployé et vivant dont la zone (40×40 px) contient le point (mx, my).
+     *
+     * @param mx  Coordonnée X du clic.
+     * @param my  Coordonnée Y du clic.
+     * @return    Le Pekka cliqué, ou {@code null} si aucun ne correspond.
      */
     private Pekka getPekkaAt(int mx, int my) {
         for (Troupe t : partie.getTroupes()) {
@@ -340,7 +290,14 @@ public class GameController {
         return null;
     }
 
-    // Bouton "+" placé à droite de chaque avatar (zone 22x22px)
+    /**
+     * Détecte si le clic tombe sur l'un des boutons "+" placés à droite de chaque avatar
+     * (zone de 22×22 px). Retourne le type correspondant, ou {@code null}.
+     *
+     * @param mx  Coordonnée X du clic.
+     * @param my  Coordonnée Y du clic.
+     * @return    "Pekka", "Sorcier", "Barbare", ou {@code null}.
+     */
     private String getAchatFromBar(int mx, int my) {
         int barY      = affichage.getMapPanel().getHeight() - 80;
         String[] noms = {"Pekka", "Sorcier", "Barbare"};
